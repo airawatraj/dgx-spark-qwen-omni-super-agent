@@ -1,6 +1,6 @@
 # DGX Spark Qwen Omni Super Agent
 
-Local DGX Spark setup for running **Qwen3.5-122B-A10B** as a bigger-brain, long-context agent through the community [`spark-vllm-docker`](https://github.com/eugr/spark-vllm-docker) recipe stack.
+Local DGX Spark setup for running **[Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound)** as a bigger-brain, long-context agent through the community [`spark-vllm-docker`](https://github.com/eugr/spark-vllm-docker) recipe stack.
 
 This repo is the Qwen omni/super-agent sibling to:
 
@@ -40,6 +40,12 @@ cd spark-vllm-docker
 
 The scripts in this repo wrap exactly that flow so the setup is reproducible and easy to tweak.
 
+The helpers are idempotent by default:
+
+* if `spark-vllm-docker` already exists, `setup/install.sh` reuses it and does not rebuild unless `FORCE_BUILD=1` is set
+* if the model is already present in the Hugging Face cache, `setup/download_model.sh` skips download unless `FORCE_DOWNLOAD=1` is set
+* `docker/start.sh` does not call the download helper; it only launches the recipe
+
 ## Why This Setup
 
 The earlier Qwen 35B setup chased maximum single-stream speed. This setup aims for the more stubborn middle ground:
@@ -56,7 +62,7 @@ The practical goal is to find the best DGX Spark brain for:
 * Claude Code on a MacBook using the DGX Spark as the local OpenAI-compatible backend
 * long autonomous sessions where speed matters, but brittle shallow reasoning is worse
 
-The model path used here is:
+The recipe model is [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound):
 
 ```text
 Intel/Qwen3.5-122B-A10B-int4-AutoRound
@@ -125,6 +131,8 @@ Examples:
 PORT=8001 CONTAINER_NAME=spark-brain-test bash docker/start.sh
 SERVED_MODEL_NAME=Cogni-Brain-Qwen122 bash docker/start.sh
 SPECULATIVE_CONFIG='{"method":"qwen3_next_mtp","num_speculative_tokens":1}' bash docker/start.sh
+FORCE_BUILD=1 bash setup/install.sh
+FORCE_DOWNLOAD=1 bash setup/download_model.sh
 ```
 
 Extra arguments after `--` are passed through to vLLM:
@@ -159,7 +167,7 @@ These are local-workstation comparison points from the adjacent repos and this r
 
 | Repo option | Model / runtime | Approx TPS | Tool score | Puzzle solve time | Context size | Concurrency stability | Best fit |
 |---|---|---:|---:|---:|---:|---|---|
-| `dgx-spark-qwen-omni-super-agent` | Qwen3.5-122B-A10B int4 AutoRound / `spark-vllm-docker` recipe | ~40 tok/s | 100/100 | ~8 min | 262K | expected to favor fewer deep sessions over many parallel jobs | Best candidate for bigger-brain NemoHermes + Claude Code |
+| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s | 100/100 | ~8 min | 262K | expected to favor fewer deep sessions over many parallel jobs | Best candidate for bigger-brain NemoHermes + Claude Code |
 | `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | ~30 sec | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
 | `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | ~3 min | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Reliable large reasoning brain for long NemoHermes jobs |
 | `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | visual puzzle smoke passed | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |

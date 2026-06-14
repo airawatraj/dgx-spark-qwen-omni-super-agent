@@ -3,8 +3,10 @@ set -euo pipefail
 
 SPARK_VLLM_DIR="${SPARK_VLLM_DIR:-../spark-vllm-docker}"
 SPARK_VLLM_REPO="${SPARK_VLLM_REPO:-https://github.com/eugr/spark-vllm-docker.git}"
-BUILD_ON_INSTALL="${BUILD_ON_INSTALL:-1}"
+BUILD_ON_INSTALL="${BUILD_ON_INSTALL:-auto}"
+FORCE_BUILD="${FORCE_BUILD:-0}"
 BUILD_PROFILE="${BUILD_PROFILE:---tf5}"
+FRESH_CLONE=0
 
 echo "=== DGX Spark Qwen3.5-122B setup check ==="
 echo "  spark-vllm-docker: $SPARK_VLLM_DIR"
@@ -53,18 +55,30 @@ echo "[5/5] Preparing spark-vllm-docker..."
 if [[ ! -d "$SPARK_VLLM_DIR/.git" ]]; then
   echo "Cloning $SPARK_VLLM_REPO ..."
   git clone "$SPARK_VLLM_REPO" "$SPARK_VLLM_DIR"
+  FRESH_CLONE=1
 else
   echo "Found existing checkout: $SPARK_VLLM_DIR"
 fi
 
-if [[ "$BUILD_ON_INSTALL" == "1" ]]; then
+if [[ "$FORCE_BUILD" == "1" ]]; then
+  SHOULD_BUILD=1
+elif [[ "$BUILD_ON_INSTALL" == "1" ]]; then
+  SHOULD_BUILD=1
+elif [[ "$BUILD_ON_INSTALL" == "auto" && "$FRESH_CLONE" == "1" ]]; then
+  SHOULD_BUILD=1
+else
+  SHOULD_BUILD=0
+fi
+
+if [[ "$SHOULD_BUILD" == "1" ]]; then
   echo "Building spark-vllm-docker once with profile $BUILD_PROFILE ..."
   (
     cd "$SPARK_VLLM_DIR"
     ./build-and-copy.sh "$BUILD_PROFILE"
   )
 else
-  echo "Skipping build because BUILD_ON_INSTALL=$BUILD_ON_INSTALL"
+  echo "Skipping build; existing spark-vllm-docker checkout is being reused."
+  echo "Set FORCE_BUILD=1 to rebuild."
 fi
 
 echo
