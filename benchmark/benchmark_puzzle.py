@@ -20,6 +20,7 @@ from pathlib import Path
 import requests
 
 
+EXPECTED_ANSWER = "dog"
 DEFAULT_PROMPT = """A teacher writes six words on a board: "cat dog has max dim tag." She gives three students, Albert, Bernard and Cheryl each a piece of paper with one letter from one of the words. Then she asks, "Albert, do you know the word?" Albert immediately replies yes. She asks, "Bernard, do you know the word?" He thinks for a moment and replies, "Yes." Then, she asks Cheryl the same question. She thinks and then replies, "Yes." What is the word?"""
 
 
@@ -42,6 +43,11 @@ def load_prompt(path):
     if path is None:
         return DEFAULT_PROMPT
     return Path(path).read_text(encoding="utf-8")
+
+
+def contains_expected_answer(text):
+    words = "".join(ch.lower() if ch.isalpha() else " " for ch in text).split()
+    return EXPECTED_ANSWER in words
 
 
 def stream_chat(base_url, model, prompt, max_tokens, temperature, timeout):
@@ -150,6 +156,11 @@ def main():
     print()
     print(c("SUMMARY", "cyan"))
     print(f"  Final solve time: {elapsed:.1f}s ({elapsed / 60:.2f} min)")
+    print(f"  Expected answer:  {EXPECTED_ANSWER}")
+    print(
+        "  Answer detected:  "
+        + (c("yes", "green") if contains_expected_answer(result["text"]) else c("no", "red"))
+    )
     if result["ttft"] is not None:
         print(f"  TTFT:    {result['ttft'] * 1000:.0f}ms")
     if result["usage"]:
