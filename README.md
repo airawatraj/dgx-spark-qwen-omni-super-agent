@@ -10,7 +10,7 @@ This repo is the Qwen omni/super-agent sibling to:
 | [`dgx-spark-nemotron-super-agent`](https://github.com/airawatraj/dgx-spark-nemotron-super-agent) | large long-context reasoning agent |
 | [`dgx-spark-qwen-super-agent`](https://github.com/airawatraj/dgx-spark-qwen-super-agent) | fast Atlas/NVFP4 Qwen text/tool agent |
 
-This one is tuned for a different balance: **bigger brain, bigger context, practical speed**. The measured profile is around **40 tok/s**, **262K context**, **100/100 tool score**, and the hard local logic puzzle solved in about **8 minutes**.
+This one is tuned for a different balance: **bigger brain, bigger context, practical speed**. The measured profile is around **40 tok/s**, **262K context**, **100/100 tool score**, and a timed hard local word puzzle run.
 
 > Personal workstation setup. Not for enterprise use. Use at your own risk.
 
@@ -85,7 +85,7 @@ flowchart TD
     D --> E["Agent tools<br/>NemoHermes / Open WebUI / local clients"]
     D --> F["262K context checks"]
     D --> G["Tool-eval-bench<br/>100/100 score"]
-    D --> H["Logic puzzle<br/>8 minute solve"]
+    D --> H["Word puzzle<br/>timed solve"]
     D --> I["spark-arena / llama-benchy"]
 ```
 
@@ -170,7 +170,7 @@ These are local-workstation comparison points from the adjacent repos and this r
 
 | Repo option | Model / runtime | Approx TPS | Tool score | Puzzle solve time | Context size | Concurrency stability | Best fit |
 |---|---|---:|---:|---:|---:|---|---|
-| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s | 100/100 | ~8 min | 262K | expected to favor fewer deep sessions over many parallel jobs | Best candidate for bigger-brain NemoHermes + Claude Code |
+| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s | 100/100 | timed run | 262K | expected to favor fewer deep sessions over many parallel jobs | Best candidate for bigger-brain NemoHermes + Claude Code |
 | `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | ~30 sec | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
 | `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | ~3 min | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Reliable large reasoning brain for long NemoHermes jobs |
 | `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | visual puzzle smoke passed | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |
@@ -186,7 +186,7 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
 | Single-stream generation | 40 tok/s |
 | Usable context | 262,144 tokens |
 | Tool-eval-bench short mode | 100 / 100 |
-| Puzzle solution | <= 8 minutes |
+| Puzzle solution | timed run; script prints final solve time |
 | Runtime path | `spark-vllm-docker` recipe |
 | Served model name | `Cogni-Brain` |
 

@@ -7,7 +7,7 @@
 DGX Spark / Qwen3.5-122B hard word-puzzle benchmark.
 
 The default prompt is the Albert/Bernard/Cheryl word puzzle used for the local
-reasoning timing run. It records elapsed time and prints a <= 8 minute verdict.
+reasoning timing run. It records elapsed time and prints the final solve time.
 You can pass --prompt-file to run a different exact puzzle text.
 """
 
@@ -20,19 +20,7 @@ from pathlib import Path
 import requests
 
 
-TARGET_SECONDS = 8 * 60
-
-DEFAULT_PROMPT = """Solve this carefully. Track what each student can infer after each answer.
-
-A teacher writes six words on a board: "cat dog has max dim tag." She gives
-three students, Albert, Bernard and Cheryl each a piece of paper with one letter
-from one of the words. Then she asks, "Albert, do you know the word?" Albert
-immediately replies yes. She asks, "Bernard, do you know the word?" He thinks
-for a moment and replies, "Yes." Then, she asks Cheryl the same question. She
-thinks and then replies, "Yes." What is the word?
-
-Give the final word and the reasoning. Do not guess.
-"""
+DEFAULT_PROMPT = """A teacher writes six words on a board: "cat dog has max dim tag." She gives three students, Albert, Bernard and Cheryl each a piece of paper with one letter from one of the words. Then she asks, "Albert, do you know the word?" Albert immediately replies yes. She asks, "Bernard, do you know the word?" He thinks for a moment and replies, "Yes." Then, she asks Cheryl the same question. She thinks and then replies, "Yes." What is the word?"""
 
 
 COLORS = {
@@ -133,7 +121,6 @@ def main():
     prompt = load_prompt(args.prompt_file)
 
     print(c("DGX Spark Qwen3.5-122B Puzzle Benchmark", "bold"))
-    print(c(f"Target: <= {TARGET_SECONDS} seconds", "dim"))
     print(c(f"Endpoint: {args.base_url}  model={args.model}", "dim"))
     print()
     if not args.hide_prompt:
@@ -162,15 +149,11 @@ def main():
     print()
     print()
     print(c("SUMMARY", "cyan"))
-    print(f"  Elapsed: {elapsed:.1f}s")
+    print(f"  Final solve time: {elapsed:.1f}s ({elapsed / 60:.2f} min)")
     if result["ttft"] is not None:
         print(f"  TTFT:    {result['ttft'] * 1000:.0f}ms")
     if result["usage"]:
         print(f"  Usage:   {result['usage']}")
-    if elapsed <= TARGET_SECONDS:
-        print(c("  Verdict: PASS, within 8 minute target", "green"))
-    else:
-        print(c("  Verdict: OVER TARGET", "yellow"))
 
 
 if __name__ == "__main__":
