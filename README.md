@@ -152,8 +152,11 @@ uv run benchmark/benchmark_speed.py
 # Tool-use smarts benchmark.
 uv run benchmark/benchmark_smarts.py --mode short
 
-# Hard logic puzzle run.
+# Hard word puzzle run, with prompt printed before model output.
 uv run benchmark/benchmark_puzzle.py
+
+# Quiet word puzzle run, without printing the prompt.
+uv run benchmark/benchmark_puzzle.py --hide-prompt
 
 # spark-arena / llama-benchy sweep. This can take hours.
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_arena.csv

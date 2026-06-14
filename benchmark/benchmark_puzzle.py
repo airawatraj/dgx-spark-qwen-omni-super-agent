@@ -88,13 +88,22 @@ def stream_chat(base_url, model, prompt, max_tokens, temperature, timeout):
             chunk = json.loads(data)
             if chunk.get("usage"):
                 usage = chunk["usage"]
-            delta = chunk["choices"][0].get("delta", {})
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+
+            delta = choices[0].get("delta") or {}
             token = (
                 delta.get("content")
                 or delta.get("reasoning")
                 or delta.get("reasoning_content")
                 or ""
             )
+            if isinstance(token, list):
+                token = "".join(
+                    item.get("text", "") if isinstance(item, dict) else str(item)
+                    for item in token
+                )
             if token:
                 if first_token_at is None:
                     first_token_at = time.perf_counter()
@@ -118,6 +127,7 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--timeout", type=int, default=900)
+    parser.add_argument("--hide-prompt", action="store_true", help="Do not print the prompt before sending it")
     args = parser.parse_args()
 
     prompt = load_prompt(args.prompt_file)
@@ -126,6 +136,11 @@ def main():
     print(c(f"Target: <= {TARGET_SECONDS} seconds", "dim"))
     print(c(f"Endpoint: {args.base_url}  model={args.model}", "dim"))
     print()
+    if not args.hide_prompt:
+        print(c("PROMPT", "cyan"))
+        print(prompt)
+        print(c("MODEL OUTPUT", "cyan"))
+        print()
 
     try:
         result = stream_chat(
