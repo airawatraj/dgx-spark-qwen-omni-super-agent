@@ -4,11 +4,11 @@
 # dependencies = ["requests"]
 # ///
 """
-DGX Spark / Qwen3.5-122B hard puzzle benchmark.
+DGX Spark / Qwen3.5-122B hard word-puzzle benchmark.
 
-The default prompt is an epistemic logic puzzle harness. It records elapsed time
-and prints a <= 8 minute target verdict. You can pass --prompt-file to run the
-exact puzzle text used for a screenshot or video.
+The default prompt is the Albert/Bernard/Cheryl word puzzle used for the local
+reasoning timing run. It records elapsed time and prints a <= 8 minute verdict.
+You can pass --prompt-file to run a different exact puzzle text.
 """
 
 import argparse
@@ -22,17 +22,16 @@ import requests
 
 TARGET_SECONDS = 8 * 60
 
-DEFAULT_PROMPT = """Solve this carefully. Track what each person knows after each statement.
+DEFAULT_PROMPT = """Solve this carefully. Track what each student can infer after each answer.
 
-Albert, Bernard, and Cheryl are trying to determine a secret date from a list of
-possible dates. Albert is told only the month, Bernard is told only the day, and
-Cheryl is told only whether the date is in the first half or second half of the
-month. They then make public statements about whether they know the date and
-what they can infer from the others' statements.
+A teacher writes six words on a board: "cat dog has max dim tag." She gives
+three students, Albert, Bernard and Cheryl each a piece of paper with one letter
+from one of the words. Then she asks, "Albert, do you know the word?" Albert
+immediately replies yes. She asks, "Bernard, do you know the word?" He thinks
+for a moment and replies, "Yes." Then, she asks Cheryl the same question. She
+thinks and then replies, "Yes." What is the word?
 
-Give the final date if it is determined. If the information is insufficient,
-explain exactly where ambiguity remains. Keep the reasoning explicit and do not
-guess.
+Give the final word and the reasoning. Do not guess.
 """
 
 
@@ -112,7 +111,7 @@ def stream_chat(base_url, model, prompt, max_tokens, temperature, timeout):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run the Qwen3.5-122B hard puzzle timing check.")
+    parser = argparse.ArgumentParser(description="Run the Qwen3.5-122B hard word-puzzle timing check.")
     parser.add_argument("--base-url", default="http://localhost:8000")
     parser.add_argument("--model", default="Cogni-Brain")
     parser.add_argument("--prompt-file")
