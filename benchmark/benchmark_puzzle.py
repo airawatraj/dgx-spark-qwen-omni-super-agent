@@ -13,6 +13,7 @@ You can pass --prompt-file to run a different exact puzzle text.
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -20,7 +21,10 @@ from pathlib import Path
 import requests
 
 
+# The intended answer for this puzzle is dog. Smaller models often stop at a
+# plausible-looking but wrong answer, so keep detection strict.
 EXPECTED_ANSWER = "dog"
+WORD_OPTIONS = {"cat", "dog", "has", "max", "dim", "tag"}
 DEFAULT_PROMPT = """A teacher writes six words on a board: "cat dog has max dim tag." She gives three students, Albert, Bernard and Cheryl each a piece of paper with one letter from one of the words. Then she asks, "Albert, do you know the word?" Albert immediately replies yes. She asks, "Bernard, do you know the word?" He thinks for a moment and replies, "Yes." Then, she asks Cheryl the same question. She thinks and then replies, "Yes." What is the word?"""
 
 
@@ -45,9 +49,35 @@ def load_prompt(path):
     return Path(path).read_text(encoding="utf-8")
 
 
-def contains_expected_answer(text):
-    words = "".join(ch.lower() if ch.isalpha() else " " for ch in text).split()
-    return EXPECTED_ANSWER in words
+def extract_final_answer(text):
+    normalized = " ".join(text.lower().split())
+    tail = normalized[-1200:]
+
+    patterns = [
+        r"\banswer\s*:\s*(?:the\s+word\s+is\s+)?[\"'`*]*([a-z]+)\b",
+        r"\bfinal\s+answer\s*:\s*(?:the\s+word\s+is\s+)?[\"'`*]*([a-z]+)\b",
+        r"\btherefore,?\s+(?:the\s+secret\s+)?word\s+(?:must\s+be|is)\s+[\"'`*]*([a-z]+)\b",
+        r"\bthe\s+(?:secret\s+)?word\s+(?:must\s+be|is)\s+[\"'`*]*([a-z]+)\b",
+    ]
+    for pattern in patterns:
+        matches = [match for match in re.findall(pattern, tail) if match in WORD_OPTIONS]
+        if matches:
+            return matches[-1]
+    return None
+
+
+def run_self_test():
+    cases = [
+        ("Answer: The word is dog.", "dog"),
+        ('Therefore, the word must be "dog".', "dog"),
+        ("It considers dog, but Answer: cat", "cat"),
+        ("dog appears in the reasoning but the conclusion is unclear", None),
+    ]
+    for text, expected in cases:
+        actual = extract_final_answer(text)
+        if actual != expected:
+            raise AssertionError(f"expected {expected!r}, got {actual!r} for {text!r}")
+    print(c("Self-test passed", "green"))
 
 
 def stream_chat(base_url, model, prompt, max_tokens, temperature, timeout):
@@ -122,7 +152,12 @@ def main():
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("--hide-prompt", action="store_true", help="Do not print the prompt before sending it")
+    parser.add_argument("--self-test", action="store_true", help="Run final-answer extraction tests and exit")
     args = parser.parse_args()
+
+    if args.self_test:
+        run_self_test()
+        return
 
     prompt = load_prompt(args.prompt_file)
 
@@ -152,14 +187,16 @@ def main():
         sys.exit(1)
 
     elapsed = result["elapsed"]
+    final_answer = extract_final_answer(result["text"])
     print()
     print()
     print(c("SUMMARY", "cyan"))
     print(f"  Final solve time: {elapsed:.1f}s ({elapsed / 60:.2f} min)")
     print(f"  Expected answer:  {EXPECTED_ANSWER}")
+    print(f"  Final answer:     {final_answer or 'not found'}")
     print(
         "  Answer detected:  "
-        + (c("yes", "green") if contains_expected_answer(result["text"]) else c("no", "red"))
+        + (c("yes", "green") if final_answer == EXPECTED_ANSWER else c("no", "red"))
     )
     if result["ttft"] is not None:
         print(f"  TTFT:    {result['ttft'] * 1000:.0f}ms")

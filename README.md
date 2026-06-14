@@ -162,7 +162,10 @@ uv run benchmark/benchmark_puzzle.py --hide-prompt
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_arena.csv
 ```
 
+The puzzle wrapper checks the final answer/conclusion text for `dog`, not casual mentions of `dog` elsewhere in the reasoning.
+
 The wrappers fetch `llama-benchy` and `tool-eval-bench` through `uv` on demand. Reruns may use newer upstream benchmark versions unless pinned locally.
+The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` asks vLLM for one token beyond the 262,144-token context window.
 
 ## Which DGX Spark Agent Repo?
 
@@ -170,7 +173,7 @@ These are local-workstation comparison points from the adjacent repos and this r
 
 | Repo option | Model / runtime | Approx TPS | Tool score | Puzzle solve time | Context size | Concurrency stability | Best fit |
 |---|---|---:|---:|---:|---:|---|---|
-| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s | 100/100 | 99.9 sec | 262K | expected to favor fewer deep sessions over many parallel jobs | Best candidate for bigger-brain NemoHermes + Claude Code |
+| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s shallow; ~14.7 tok/s at 200K | 100/100 | 99.9 sec | 262K | best for one or two deep sessions; 4-way long-context runs degrade sharply | Best candidate for bigger-brain NemoHermes + Claude Code |
 | `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | ~30 sec | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
 | `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | ~3 min | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Reliable large reasoning brain for long NemoHermes jobs |
 | `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | visual puzzle smoke passed | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |
@@ -187,8 +190,27 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
 | Usable context | 262,144 tokens |
 | Tool-eval-bench short mode | 100 / 100 |
 | Puzzle solution | 99.9 sec / 1.67 min |
+| llama-benchy shallow `tg128` | 39.61 tok/s single stream; 65.11 tok/s total at c2; 82.85 tok/s total at c4 |
+| llama-benchy long-context `tg128` | 25.10 tok/s at 65K; 18.27 tok/s at 131K; 14.65 tok/s at 200K |
 | Runtime path | `spark-vllm-docker` recipe |
 | Served model name | `Cogni-Brain` |
+
+### Llama-Benchy Arena
+
+<p align="center">
+  <img src="./assets/spark_arena_qwen3_5_122b.png" width="850" alt="Spark Arena community benchmark for Qwen3.5-122B on single DGX Spark">
+  <br><i><a href="https://spark-arena.com/benchmark/sub1781472573286">spark-arena community benchmark</a> for Qwen3.5-122B on single DGX Spark.</i>
+</p>
+
+Selected `llama-benchy` results for the `Cogni-Brain` served model:
+
+| Test | c1 | c2 total / req | c4 total / req |
+|---|---:|---:|---:|
+| `pp2048` | 1844.87 tok/s | 2146.64 / 1075.50 tok/s | 2175.14 / 585.89 tok/s |
+| `tg128` | 39.61 tok/s | 65.11 / 33.42 tok/s | 82.85 / 22.44 tok/s |
+| `tg128 @ d65535` | 25.10 tok/s | 30.31 / 16.29 tok/s | 34.63 / 10.61 tok/s |
+| `tg128 @ d131072` | 18.27 tok/s | 20.26 / 11.01 tok/s | 1.67 / 3.70 tok/s |
+| `tg128 @ d200000` | 14.65 tok/s | 14.36 / 8.11 tok/s | 0.78 / 3.27 tok/s |
 
 ### Speed and Context
 

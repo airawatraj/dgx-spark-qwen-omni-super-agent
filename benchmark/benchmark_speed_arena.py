@@ -90,7 +90,12 @@ def main():
         "--depth",
         nargs="+",
         type=int,
-        default=[0, 4096, 8192, 16384, 32768, 65535, 100000, 131072, 200000, 262144],
+        default=[0, 4096, 8192, 16384, 32768, 65535, 100000, 131072, 200000, 262143],
+        help=(
+            "Depth values for llama-benchy. The top default is 262143 because "
+            "with tg=128 the generated prompt tokenizes to 262016 input tokens, "
+            "fitting the 262144-token model limit exactly."
+        ),
     )
     parser.add_argument("--concurrency", nargs="+", type=int, default=[1, 2, 4])
     parser.add_argument("--save-result", default="benchmark/results_arena.csv")
