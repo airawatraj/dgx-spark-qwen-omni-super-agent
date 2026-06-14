@@ -214,6 +214,12 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
   <img src="./assets/benchmark_smarts_3.png" width="650" alt="Qwen3.5-122B tool benchmark deployability and responsiveness">
 </p>
 
+### Puzzle Solve
+
+<p align="center">
+  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B word puzzle solution">
+</p>
+
 ### Claude Code Agent Demo
 
 <p align="center">
