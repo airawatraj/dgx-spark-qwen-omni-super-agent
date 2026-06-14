@@ -179,6 +179,37 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
 | Runtime path | `spark-vllm-docker` recipe |
 | Served model name | `Cogni-Brain` |
 
+### Speed and Context
+
+<p align="center">
+  <img src="./assets/benchmark_speed_test_1-3.png" width="650" alt="Qwen3.5-122B speed benchmark tests 1 to 3">
+</p>
+
+<p align="center">
+  <img src="./assets/benchmark_speed_test_4-5.png" width="650" alt="Qwen3.5-122B context and health benchmark tests 4 to 5">
+</p>
+
+### Tool Score
+
+<p align="center">
+  <img src="./assets/benchmark_smarts_1.png" width="650" alt="Qwen3.5-122B tool benchmark summary">
+</p>
+
+<p align="center">
+  <img src="./assets/benchmark_smarts_2.png" width="650" alt="Qwen3.5-122B tool benchmark details">
+</p>
+
+<p align="center">
+  <img src="./assets/benchmark_smarts_3.png" width="650" alt="Qwen3.5-122B tool benchmark deployability and responsiveness">
+</p>
+
+### Claude Code Agent Demo
+
+<p align="center">
+  <img src="./assets/claude_code_cogni_brain_chess_app.png" width="850" alt="Claude Code using Cogni-Brain to generate a chess app">
+  <br><i>Claude Code on MacBook using Cogni-Brain as the local DGX Spark backend to generate a chess app.</i>
+</p>
+
 ## Repository Structure
 
 ```text
