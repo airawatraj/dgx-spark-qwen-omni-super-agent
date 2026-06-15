@@ -12,7 +12,7 @@ abstract: >-
   A lightweight DGX Spark setup and benchmark wrapper suite for running
   Intel/Qwen3.5-122B-A10B-int4-AutoRound through the community spark-vllm-docker
   recipe stack, targeting a practical balance of local agent speed, 262K-class
-  context, tool-use reliability, and hard puzzle reasoning.
+  context and tool-use reliability.
 keywords:
   - "Qwen"
   - "DGX Spark"

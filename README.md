@@ -10,7 +10,7 @@ This repo is the Qwen omni/super-agent sibling to:
 | [`dgx-spark-nemotron-super-agent`](https://github.com/airawatraj/dgx-spark-nemotron-super-agent) | large long-context reasoning agent |
 | [`dgx-spark-qwen-super-agent`](https://github.com/airawatraj/dgx-spark-qwen-super-agent) | fast Atlas/NVFP4 Qwen text/tool agent |
 
-This one is tuned for a different balance: **bigger brain, bigger context, practical speed**. The measured profile is around **40 tok/s**, **262K context**, **100/100 tool score**, and a hard local word puzzle solved in **99.9 seconds**.
+This one is tuned for a different balance: **bigger brain, bigger context, practical speed**. The measured profile is around **40 tok/s**, **262K context**, **100/100 tool score**, and an Open WebUI reasoning example that thought for **4 minutes**.
 
 > Personal workstation setup. Not for enterprise use. Use at your own risk.
 
@@ -85,7 +85,7 @@ flowchart TD
     D --> E["Agent tools<br/>NemoHermes / Open WebUI / local clients"]
     D --> F["262K context checks"]
     D --> G["Tool-eval-bench<br/>100/100 score"]
-    D --> H["Word puzzle<br/>timed solve"]
+    D --> H["Open WebUI<br/>reasoning checks"]
     D --> I["spark-arena / llama-benchy"]
 ```
 
@@ -152,17 +152,9 @@ uv run benchmark/benchmark_speed.py
 # Tool-use smarts benchmark.
 uv run benchmark/benchmark_smarts.py --mode short
 
-# Hard word puzzle run, with prompt printed before model output.
-uv run benchmark/benchmark_puzzle.py
-
-# Quiet word puzzle run, without printing the prompt.
-uv run benchmark/benchmark_puzzle.py --hide-prompt
-
 # spark-arena / llama-benchy sweep. This can take hours.
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_arena.csv
 ```
-
-The puzzle wrapper checks the final answer/conclusion text for `dog`, not casual mentions of `dog` elsewhere in the reasoning.
 
 The wrappers fetch `llama-benchy` and `tool-eval-bench` through `uv` on demand. Reruns may use newer upstream benchmark versions unless pinned locally.
 The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` asks vLLM for one token beyond the 262,144-token context window.
@@ -171,12 +163,12 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 
 These are local-workstation comparison points from the adjacent repos and this repo. Treat them as practical operating notes, not universal model claims.
 
-| Repo option | Model / runtime | Approx TPS | Tool score | Puzzle solve time | Context size | Concurrency stability | Best fit |
-|---|---|---:|---:|---:|---:|---|---|
-| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s shallow; ~14.7 tok/s at 200K | 100/100 | 99.9 sec | 262K | best for one or two deep sessions; 4-way long-context runs degrade sharply | Best candidate for bigger-brain NemoHermes + Claude Code |
-| `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | ~30 sec | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
-| `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | ~3 min | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Reliable large reasoning brain for long NemoHermes jobs |
-| `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | visual puzzle smoke passed | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |
+| Repo option | Model / runtime | Approx TPS | Tool score | Context size | Concurrency stability | Best fit |
+|---|---|---:|---:|---:|---|---|
+| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s shallow; ~14.7 tok/s at 200K | 100/100 | 262K | best for one or two deep sessions; 4-way long-context runs degrade sharply | Best candidate for bigger-brain NemoHermes + Claude Code |
+| `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
+| `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Reliable large reasoning brain for long NemoHermes jobs |
+| `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |
 
 Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram workflow because it preserves more of the 120B-class reasoning feel while keeping enough speed for interactive agent loops and opening the context window to 262K.
 
@@ -189,7 +181,7 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
 | Single-stream generation | 40 tok/s |
 | Usable context | 262,144 tokens |
 | Tool-eval-bench short mode | 100 / 100 |
-| Puzzle solution | 99.9 sec / 1.67 min |
+| Open WebUI reasoning example | thought for 4 minutes |
 | llama-benchy shallow `tg128` | 39.61 tok/s single stream; 65.11 tok/s total at c2; 82.85 tok/s total at c4 |
 | llama-benchy long-context `tg128` | 25.10 tok/s at 65K; 18.27 tok/s at 131K; 14.65 tok/s at 200K |
 | Runtime path | `spark-vllm-docker` recipe |
@@ -236,10 +228,11 @@ Selected `llama-benchy` results for the `Cogni-Brain` served model:
   <img src="./assets/benchmark_smarts_3.png" width="650" alt="Qwen3.5-122B tool benchmark deployability and responsiveness">
 </p>
 
-### Puzzle Solve
+### Open WebUI Reasoning Example
 
 <p align="center">
-  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B word puzzle solution">
+  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B reasoning example in Open WebUI">
+  <br><i>Open WebUI reasoning example showing Cogni-Brain thought for 4 minutes before answering.</i>
 </p>
 
 ### Claude Code Agent Demo
@@ -267,7 +260,6 @@ Selected `llama-benchy` results for the `Cogni-Brain` served model:
 +-- benchmark/
     +-- benchmark_speed.py
     +-- benchmark_smarts.py
-    +-- benchmark_puzzle.py
     +-- benchmark_speed_arena.py
 ```
 
