@@ -175,6 +175,7 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
 ## Benchmark Results
 
 > Results vary with recipe version, model revision, context length, concurrency, memory pressure, and upstream benchmark versions.
+> A DFlash speculative-decode attempt pushed short-burst speed further, to about **45.2 tok/s**, but was not adopted because tool-eval-bench dropped from **100/100** to **33/100** and tool calls repeatedly returned `500 Internal Server Error`. See [DFLASH_EXPERIMENT.md](./DFLASH_EXPERIMENT.md) for the exact config and notes.
 
 | Check | Result |
 |---|---:|
@@ -247,6 +248,7 @@ Selected `llama-benchy` results for the `Cogni-Brain` served model:
 ```text
 .
 +-- README.md
++-- DFLASH_EXPERIMENT.md
 +-- CITATION.cff
 +-- LICENSE
 +-- assets/
