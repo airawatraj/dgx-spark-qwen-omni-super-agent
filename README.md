@@ -10,7 +10,7 @@ This repo is the Qwen omni/super-agent sibling to:
 | [`dgx-spark-nemotron-super-agent`](https://github.com/airawatraj/dgx-spark-nemotron-super-agent) | large long-context reasoning agent |
 | [`dgx-spark-qwen-super-agent`](https://github.com/airawatraj/dgx-spark-qwen-super-agent) | fast Atlas/NVFP4 Qwen text/tool agent |
 
-This one is tuned for a different balance: **bigger brain, bigger context, practical speed**. The measured profile is around **40 tok/s**, **262K context**, **100/100 tool score**, and an Open WebUI reasoning example that thought for **4 minutes**.
+This one is tuned for a different balance: **bigger brain, bigger context, practical speed**. The measured profile is around **40 tok/s**, **262K context**, **100/100 tool score**, and an Open WebUI reasoning example that thought for **5 minutes**.
 
 > Personal workstation setup. Not for enterprise use. Use at your own risk.
 
@@ -181,7 +181,7 @@ Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram
 | Single-stream generation | 40 tok/s |
 | Usable context | 262,144 tokens |
 | Tool-eval-bench short mode | 100 / 100 |
-| Open WebUI reasoning example | thought for 4 minutes |
+| Open WebUI reasoning example | thought for 5 minutes |
 | llama-benchy shallow `tg128` | 39.61 tok/s single stream; 65.11 tok/s total at c2; 82.85 tok/s total at c4 |
 | llama-benchy long-context `tg128` | 25.10 tok/s at 65K; 18.27 tok/s at 131K; 14.65 tok/s at 200K |
 | Runtime path | `spark-vllm-docker` recipe |
@@ -232,7 +232,7 @@ Selected `llama-benchy` results for the `Cogni-Brain` served model:
 
 <p align="center">
   <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B reasoning example in Open WebUI">
-  <br><i>Open WebUI reasoning example showing Cogni-Brain thought for 4 minutes before answering.</i>
+  <br><i>Open WebUI reasoning example showing Cogni-Brain thought for 5 minutes before answering.</i>
 </p>
 
 ### Claude Code Agent Demo
