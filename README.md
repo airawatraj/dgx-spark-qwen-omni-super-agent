@@ -146,7 +146,7 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 
 > Results vary with recipe version, model revision, context length, concurrency, memory pressure, and upstream benchmark versions.
 
-> A DFlash speculative-decode attempt pushed short-burst speed further, to about **45.2 tok/s average** and **46.2 tok/s peak**, but was not adopted because Tool-Eval dropped from **100/100** to **33/100** and tool calls repeatedly returned `500 Internal Server Error`. See [`DFLASH_EXPERIMENT.md`](./DFLASH_EXPERIMENT.md) for the exact config and notes.
+> Speed-push experiments are documented below because the stable recipe profile is the one that preserved tool reliability.
 
 > A separate conservative-looking test using `max_num_batched_tokens=16384`, `num_speculative_tokens=1`, and `gpu_memory_utilization=0.8` was also worse than the stable recipe profile: **37.8 tok/s average**, **38.2 tok/s peak**, and **7/100 Tool-Eval** with repeated `500 Internal Server Error` failures. This repo therefore keeps the original stable recipe profile as the documented default.
 
@@ -163,7 +163,7 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 
 ### Stable Profile vs Rejected Experiments
 
-| Profile | Main goal | Approx TPS | Tool score | Status |
+| Profile | Main goal | Approx TPS | Tool-Eval | Status |
 |---|---|---:|---:|---|
 | Stable recipe profile | long-context local agent use | ~40 tok/s | 100 / 100 | default |
 | DFlash speed-push profile | short-burst speed experiment | ~45.2 tok/s average; 46.2 tok/s peak | 33 / 100 | documented experiment, not default |
@@ -226,7 +226,6 @@ Selected `llama-benchy` results for the `Cogni-Brain` served model:
   <br><i>Claude Code on MacBook using Cogni-Brain as the local DGX Spark backend to generate a chess app.</i>
 </p>
 
-
 ### DFlash Speed Experiment
 
 A DFlash speculative-decode attempt pushed short-burst speed further, to about **45.2 tok/s average** and **46.2 tok/s peak**, but was not adopted because Tool-Eval dropped from **100/100** to **33/100** and tool calls repeatedly returned `500 Internal Server Error`.
@@ -237,14 +236,12 @@ See [`DFLASH_EXPERIMENT.md`](./DFLASH_EXPERIMENT.md) for the full command, scree
 
 These are local-workstation comparison points from the adjacent repos and this repo. Treat them as practical operating notes, not universal model claims.
 
-| Repo option | Model / runtime | Approx TPS | Tool score | Context size | Concurrency stability | Best fit |
+| Repo option | Model / runtime | Approx TPS | Tool-Eval | Context size | Concurrency stability | Best fit |
 |---|---|---:|---:|---:|---|---|
 | `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s shallow; ~14.7 tok/s at 200K | 100/100 | 262K | best for one or two deep sessions; 4-way long-context runs degrade sharply | Best candidate for bigger-brain NemoHermes + Claude Code |
 | `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
 | `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Original large reasoning brain for long NemoHermes jobs |
 | `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |
-
-Current read: Qwen3.5-122B is the one to test hardest for the MacBook + Telegram workflow because it preserves more of the 120B-class reasoning feel while keeping enough speed for interactive agent loops and opening the context window to 262K.
 
 ## Repository Structure
 
