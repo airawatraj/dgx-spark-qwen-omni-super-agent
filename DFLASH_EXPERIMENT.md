@@ -1,8 +1,11 @@
-# DFlash Speculative Decode Experiment
+# Failed / Abandoned DFlash Speculative Decode Experiment
 
 This was an attempted speed-push configuration for Qwen3.5-122B on DGX Spark.
 It reached a higher short-burst speed profile, around **45.2 tok/s average** and
 **46.2 tok/s peak**, but was not worth adopting as the default runtime.
+
+Status: **failed / abandoned**. This is preserved as a previous experiment only.
+Do not use this as the primary setup.
 
 The tradeoff was severe:
 
@@ -12,8 +15,9 @@ The tradeoff was severe:
 * Tool-eval-bench dropped from **100/100** on the stable recipe to **33/100**.
 * Multiple tool-call scenarios returned `500 Internal Server Error`.
 
-Working read: DFlash is incompatible with `qwen3_xml` tool calling in this vLLM
-build, even though it can make shallow generation look faster.
+Working read: this `spark-vllm-docker` DFlash attempt is incompatible with
+`qwen3_xml` tool calling in this vLLM build, even though it can make shallow
+generation look faster. The later Entrpi runtime is the successful DFlash path.
 
 ## Commands
 

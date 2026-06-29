@@ -1,24 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SPARK_VLLM_DIR="${SPARK_VLLM_DIR:-../spark-vllm-docker}"
-RECIPE="${RECIPE:-qwen3.5-122b-int4-autoround}"
+ENTRPI_DIR="${ENTRPI_DIR:-$HOME/cogni-brain}"
+IMAGE="${IMAGE:-ghcr.io/aeon-7/aeon-vllm-ultimate:2026-06-18-v0.23.0-dflashfix}"
+MODEL_ID="${MODEL_ID:-bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid}"
+DRAFTER_MODEL_ID="${DRAFTER_MODEL_ID:-z-lab/Qwen3.5-122B-A10B-DFlash}"
 CONTAINER_NAME="${CONTAINER_NAME:-spark-brain}"
-SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Cogni-Brain}"
 PORT="${PORT:-8000}"
-SPECULATIVE_CONFIG="${SPECULATIVE_CONFIG:-{\"method\":\"qwen3_next_mtp\",\"num_speculative_tokens\":2}}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-262144}"
+MAX_NUM_SEQS="${MAX_NUM_SEQS:-3}"
+MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"
+GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.82}"
+HF_CACHE_DIR="${HF_CACHE_DIR:-$HOME/.cache/huggingface}"
 
-echo "=== Qwen3.5-122B spark-vllm-docker launch ==="
-echo "  spark-vllm-docker: $SPARK_VLLM_DIR"
-echo "  Recipe:            $RECIPE"
-echo "  Container:         $CONTAINER_NAME"
-echo "  Served name:       $SERVED_MODEL_NAME"
-echo "  Port:              $PORT"
-echo "  Speculative config:$SPECULATIVE_CONFIG"
+echo "=== Cogni-Brain DFlash dense launch ==="
+echo "  Entrpi runtime:         $ENTRPI_DIR"
+echo "  Image:                  $IMAGE"
+echo "  Model:                  $MODEL_ID"
+echo "  Drafter:                $DRAFTER_MODEL_ID"
+echo "  Container:              $CONTAINER_NAME"
+echo "  Port:                   $PORT"
+echo "  Max model length:       $MAX_MODEL_LEN"
+echo "  Max num seqs:           $MAX_NUM_SEQS"
+echo "  Max num batched tokens: $MAX_NUM_BATCHED_TOKENS"
+echo "  GPU memory utilization: $GPU_MEMORY_UTILIZATION"
 echo
 
-if [[ ! -x "$SPARK_VLLM_DIR/run-recipe.sh" ]]; then
-  echo "ERROR: $SPARK_VLLM_DIR/run-recipe.sh not found or not executable."
+if [[ ! -x "$ENTRPI_DIR/install.sh" ]]; then
+  echo "ERROR: $ENTRPI_DIR/install.sh not found or not executable."
   echo "Run: bash setup/install.sh"
   exit 1
 fi
@@ -29,32 +38,29 @@ if [[ -z "${HF_TOKEN:-}" ]]; then
 fi
 
 EXTRA_ARGS=("$@")
-if [[ "${EXTRA_ARGS[0]:-}" == "--" ]]; then
-  EXTRA_ARGS=("${EXTRA_ARGS[@]:1}")
-fi
 
-HF_ENV=()
-if [[ -n "${HF_TOKEN:-}" ]]; then
-  HF_ENV=(-e "HF_TOKEN=${HF_TOKEN}")
-fi
-
+# Idempotent: remove any existing container with the same name before starting.
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo "Cleaning up existing container..."
+  echo "Removing existing container $CONTAINER_NAME ..."
   docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true
-  docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker rm   "$CONTAINER_NAME" >/dev/null 2>&1 || true
 fi
 
-echo "Starting recipe..."
+echo "Starting Entrpi runtime..."
 (
-  cd "$SPARK_VLLM_DIR"
-  ./run-recipe.sh "$RECIPE" --solo \
-    -d --name "$CONTAINER_NAME" \
-    -p "$PORT:8000" \
-    "${HF_ENV[@]}" \
-    -- \
-    --served-model-name "$SERVED_MODEL_NAME" \
-    --speculative-config "$SPECULATIVE_CONFIG" \
-    "${EXTRA_ARGS[@]}"
+  cd "$ENTRPI_DIR"
+  REPO_DIR="$ENTRPI_DIR" \
+  QWEN_IMAGE="$IMAGE" \
+  HYBRID_REPO="$MODEL_ID" \
+  DRAFT_REPO="$DRAFTER_MODEL_ID" \
+  NAME="$CONTAINER_NAME" \
+  PORT="$PORT" \
+  CTX="$MAX_MODEL_LEN" \
+  GPU_MEM="$GPU_MEMORY_UTILIZATION" \
+  MAX_NUM_SEQS="$MAX_NUM_SEQS" \
+  MAX_BATCHED_TOKENS="$MAX_NUM_BATCHED_TOKENS" \
+  HF_HOME="$HF_CACHE_DIR" \
+  ./install.sh --start --no-pull --no-download "${EXTRA_ARGS[@]}"
 )
 
 echo

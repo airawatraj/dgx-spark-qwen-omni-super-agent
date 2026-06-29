@@ -1,8 +1,8 @@
 # DGX Spark Qwen Omni Super Agent
 
-Stable long-context **Cogni-Brain** agent profile for running **[Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound)** on NVIDIA DGX Spark through the community [`spark-vllm-docker`](https://github.com/eugr/spark-vllm-docker) recipe stack.
+Stable long-context **Cogni-Brain** agent profile for running **[bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid](https://hfviewer.com/bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid)** on NVIDIA DGX Spark with **DFlash speculative decoding n=12** via **[z-lab/Qwen3.5-122B-A10B-DFlash](https://hfviewer.com/z-lab/Qwen3.5-122B-A10B-DFlash)**.
 
-This repo is not tuned for peak benchmark TPS alone. It is tuned for practical local agent serving: **262K context**, around **40 tok/s**, **100/100 Tool-Eval**, OpenAI-compatible vLLM serving, and stable use as the `Cogni-Brain` backend for Claude Code, NemoHermes, Open WebUI, and local agent clients.
+The primary stable setup is the Entrpi dense DFlash runtime from [`qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark). Setup credit for the primary run goes to Entrpi. It is the run to use first: **54.44 tok/s single-stream (`tg128 c1`)**, **68 tok/s peak**, **262K context**, **3 concurrent streams**, OpenAI-compatible vLLM serving, and stable use as the `Cogni-Brain` backend for Claude Code, NemoHermes, Open WebUI, and local agent clients.
 
 This repo is the Qwen omni/super-agent sibling to:
 
@@ -16,15 +16,11 @@ This one is tuned for a different balance: **bigger context, reliable tool use, 
 
 > Personal workstation setup. Not for enterprise use. Use at your own risk.
 
-## What Worked
+## Primary Stable Run
 
-The reliable path was to use the community `spark-vllm-docker` recipe through this repo's wrapper scripts instead of hand-assembling a long `docker run`.
+The reliable path is now the Entrpi dense DFlash setup from [`qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark). Entrpi's setup pairs the hybrid INT4+FP8 checkpoint with the DFlash drafter and starts the OpenAI-compatible vLLM endpoint under the `Cogni-Brain` served name.
 
-The helpers are idempotent by default:
-
-* `setup/install.sh` reuses an existing `spark-vllm-docker` checkout unless `FORCE_BUILD=1` is set
-* `setup/download_model.sh` skips the model download if it is already present unless `FORCE_DOWNLOAD=1` is set
-* `docker/start.sh` only launches the recipe
+The older `spark-vllm-docker` INT4 AutoRound + MTP setup is preserved below as the AutoRound baseline run. It remains useful as a previous stable baseline, but it is no longer the primary recommendation.
 
 ## Why This Setup
 
@@ -33,8 +29,8 @@ The earlier Qwen 35B setup chased maximum single-stream speed. The Nemotron setu
 * enough speed to stay usable as a local agent
 * enough model capacity to feel less brittle on deep reasoning
 * enough context for 262K-class working memory
-* reliable tool calling under `qwen3_xml`
-* simple launch path using a predefined recipe
+* reliable dense DFlash serving through the Entrpi runtime (setup credit: [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark))
+* simple launch path using this repo's own `setup/install.sh` and `docker/start.sh`
 * OpenAI-compatible serving under the stable `Cogni-Brain` alias
 
 The practical goal is to find the best DGX Spark brain for:
@@ -49,27 +45,27 @@ The practical goal is to find the best DGX Spark brain for:
 | Layer | Choice |
 |---|---|
 | Hardware | NVIDIA DGX Spark |
-| Runtime | `spark-vllm-docker` |
-| Recipe | `qwen3.5-122b-int4-autoround` |
-| Model | `Intel/Qwen3.5-122B-A10B-int4-AutoRound` |
+| Runtime | Entrpi `qwen3.5-122B-A10B-on-spark` |
+| Setup credit | [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark) |
+| Model | `bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid` |
+| Quantization | INT4+FP8 hybrid |
+| Speculative decoding | DFlash n=12 via `z-lab/Qwen3.5-122B-A10B-DFlash` |
 | Served name | `Cogni-Brain` |
 | API shape | OpenAI-compatible vLLM endpoint |
 | Main clients | Claude Code, NemoHermes, Open WebUI, local agents |
-| Stable target | 262K context, ~40 tok/s, 100/100 Tool-Eval |
+| Stable result | 54.44 tok/s single-stream (`tg128 c1`), 68 tok/s peak, 262K context, 3 concurrent streams |
 
 ## Quick Start
 
 ```bash
-# 1. Verify prerequisites and clone/build spark-vllm-docker if needed.
+# 1. Verify prerequisites, clone the Entrpi runtime, patch the served model
+#    name to Cogni-Brain, and download both models.
 bash setup/install.sh
 
-# 2. Download the model through the community helper.
-bash setup/download_model.sh
-
-# 3. Launch the recipe.
+# 2. Launch the container.
 bash docker/start.sh
 
-# 4. Follow logs.
+# 3. Follow logs.
 docker logs -f spark-brain
 ```
 
@@ -79,49 +75,26 @@ Stop:
 bash docker/stop.sh
 ```
 
+Subsequent starts (models already downloaded):
+
+```bash
+bash docker/start.sh
+```
+
 ## Runtime Defaults
 
-`docker/start.sh` is the canonical launch path.
+The primary launch path is `bash setup/install.sh` (first time) and `bash docker/start.sh` (subsequent starts). Setup credit: [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark).
 
 | Setting | Default |
 |---|---|
-| `SPARK_VLLM_DIR` | `../spark-vllm-docker` |
-| `MODEL_ID` | `Intel/Qwen3.5-122B-A10B-int4-AutoRound` |
-| `RECIPE` | `qwen3.5-122b-int4-autoround` |
-| `CONTAINER_NAME` | `spark-brain` |
-| `SERVED_MODEL_NAME` | `Cogni-Brain` |
+| Runtime checkout | `~/cogni-brain` |
+| Container image | `ghcr.io/aeon-7/aeon-vllm-ultimate:2026-06-18-v0.23.0-dflashfix` |
+| Container name | `spark-brain` |
+| Model | `bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid` |
+| Drafter | `z-lab/Qwen3.5-122B-A10B-DFlash` |
+| Speculative decoding | DFlash n=12 (set by Entrpi runtime; override via `--nspec N` as an extra arg) |
+| Served model name | `Cogni-Brain` (patched into Entrpi's `runtime/serve.sh` by `setup/install.sh`) |
 | `PORT` | `8000` |
-| `SPECULATIVE_CONFIG` | `{"method":"qwen3_next_mtp","num_speculative_tokens":2}` |
-
-Examples:
-
-```bash
-PORT=8001 CONTAINER_NAME=spark-brain-test bash docker/start.sh
-SERVED_MODEL_NAME=Cogni-Brain-Qwen122 bash docker/start.sh
-FORCE_BUILD=1 bash setup/install.sh
-FORCE_DOWNLOAD=1 bash setup/download_model.sh
-```
-
-Extra arguments after `--` are passed through to vLLM. The stable benchmarked profile relies on the recipe defaults plus the served model name and speculative config from `docker/start.sh`.
-
-For controlled experiments only:
-
-```bash
-bash docker/start.sh -- --max-model-len 262144 --gpu-memory-utilization 0.8
-```
-
-Do not treat higher memory utilisation, larger batching, or changed speculative-token settings as stable until tool calling is re-tested.
-
-The documented stable run used:
-
-```text
-max_model_len=262144
-gpu_memory_utilization=0.8
-tensor_parallel=1
-max_num_batched_tokens=8192
-served_model_name=Cogni-Brain
-speculative_config={"method":"qwen3_next_mtp","num_speculative_tokens":2}
-```
 
 ## Benchmarks
 
@@ -146,98 +119,48 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 
 > Results vary with recipe version, model revision, context length, concurrency, memory pressure, and upstream benchmark versions.
 
-> Speed-push experiments are documented below because the stable recipe profile is the one that preserved tool reliability.
+> Previous experiments are documented below because they explain why the Entrpi DFlash runtime became the primary setup.
 
-> A separate conservative-looking test using `max_num_batched_tokens=16384`, `num_speculative_tokens=1`, and `gpu_memory_utilization=0.8` was also worse than the stable recipe profile: **37.8 tok/s average**, **38.2 tok/s peak**, and **7/100 Tool-Eval** with repeated `500 Internal Server Error` failures. This repo therefore keeps the original stable recipe profile as the documented default.
+> A separate conservative-looking AutoRound test using `max_num_batched_tokens=16384`, `num_speculative_tokens=1`, and `gpu_memory_utilization=0.8` was also worse than the baseline recipe profile: **37.8 tok/s average**, **38.2 tok/s peak**, and **7/100 Tool-Eval** with repeated `500 Internal Server Error` failures. It remains rejected.
 
 | Check | Result |
 |---|---:|
-| Single-stream generation | ~40 tok/s |
+| Model | `bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid` |
+| Speculative decoding | DFlash n=12 via `z-lab/Qwen3.5-122B-A10B-DFlash` |
+| Single-stream generation | 54.44 tok/s (`tg128 c1`) |
+| Peak generation | 68 tok/s |
 | Usable context | 262,144 tokens |
+| Concurrent streams | 3 |
 | Tool-eval-bench short mode | 100 / 100 |
-| Open WebUI reasoning example | 5-minute reasoning trace |
-| llama-benchy shallow `tg128` | 39.61 tok/s single stream; 65.11 tok/s total at c2; 82.85 tok/s total at c4 |
-| llama-benchy long-context `tg128` | 25.10 tok/s at 65K; 18.27 tok/s at 131K; 14.65 tok/s at 200K |
-| Runtime path | `spark-vllm-docker` recipe |
+| Spark Arena result | [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406) |
+| Setup credit | [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark) |
 | Served model name | `Cogni-Brain` |
 
 ### Stable Profile vs Experiments
 
 | Profile | Main goal | Approx TPS | Tool-Eval | Status |
 |---|---|---:|---:|---|
-| Stable recipe profile | long-context local agent use | ~40 tok/s | 100 / 100 | default |
-| DFlash Entrpi runtime | faster local agent serving | 47.7 tok/s average; 50.3 tok/s peak | 100 / 100 | documented successful experiment |
-| DFlash speed-push profile | short-burst speed experiment | ~45.2 tok/s average; 46.2 tok/s peak | 33 / 100 | documented experiment, not default |
+| Entrpi dense DFlash runtime | primary stable local agent use | 54.44 tok/s `tg128 c1`; 68 tok/s peak | 100 / 100 | default |
+| AutoRound baseline recipe profile | previous long-context baseline | ~40 tok/s | 100 / 100 | preserved previous run |
+| Failed DFlash speed-push profile | abandoned short-burst speed experiment | ~45.2 tok/s average; 46.2 tok/s peak | 33 / 100 | failed / abandoned |
 | 16384/spec1/gpu0.8 profile | conservative batching/speculative test | 37.8 tok/s average; 38.2 tok/s peak | 7 / 100 | rejected |
 
-The speed experiments are useful because they show the tradeoff clearly: the first DFlash attempt was faster but broke tool reliability, while the later Entrpi runtime preserved the 100/100 tool score and improved short-output speed.
+The speed experiments are useful because they show the tradeoff clearly: the first `spark-vllm-docker` DFlash attempt was faster but broke tool reliability, while the Entrpi DFlash runtime preserved the 100/100 tool score and became the primary stable setup. Setup credit for the primary DFlash run goes to [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark).
 
-### Llama-Benchy Spark Arena
+### Primary Spark Arena Result
 
-<p align="center">
-  <img src="./assets/spark_arena_qwen3_5_122b.png" width="850" alt="Spark Arena community benchmark for Qwen3.5-122B on single DGX Spark">
-  <br><i><a href="https://spark-arena.com/benchmark/sub1781472573286">spark-arena community benchmark</a> for Qwen3.5-122B on single DGX Spark.</i>
-</p>
+Spark Arena result for the Entrpi dense DFlash primary run: [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406). Setup credit: [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark).
 
-Selected `llama-benchy` results for the `Cogni-Brain` served model:
+## Previous Run: AutoRound Baseline
 
-| Test | c1 | c2 total / req | c4 total / req |
-|---|---:|---:|---:|
-| `pp2048` | 1844.87 tok/s | 2146.64 / 1075.50 tok/s | 2175.14 / 585.89 tok/s |
-| `tg128` | 39.61 tok/s | 65.11 / 33.42 tok/s | 82.85 / 22.44 tok/s |
-| `tg128 @ d65535` | 25.10 tok/s | 30.31 / 16.29 tok/s | 34.63 / 10.61 tok/s |
-| `tg128 @ d131072` | 18.27 tok/s | 20.26 / 11.01 tok/s | 1.67 / 3.70 tok/s |
-| `tg128 @ d200000` | 14.65 tok/s | 14.36 / 8.11 tok/s | 0.78 / 3.27 tok/s |
+The previous baseline used INT4 AutoRound + MTP through `spark-vllm-docker`, reached about **40 tok/s**, and preserved **100/100 Tool-Eval**; see [`AUTOROUND_EXPERIMENT.md`](./AUTOROUND_EXPERIMENT.md) for full setup notes, benchmark tables, and screenshots.
 
-### Speed and Context
-
-<p align="center">
-  <img src="./assets/benchmark_speed_test_1-3.png" width="650" alt="Qwen3.5-122B speed benchmark tests 1 to 3">
-</p>
-
-<p align="center">
-  <img src="./assets/benchmark_speed_test_4-5.png" width="650" alt="Qwen3.5-122B context and health benchmark tests 4 to 5">
-</p>
-
-### Tool Score
-
-<p align="center">
-  <img src="./assets/benchmark_smarts_1.png" width="650" alt="Qwen3.5-122B tool benchmark summary">
-</p>
-
-<p align="center">
-  <img src="./assets/benchmark_smarts_2.png" width="650" alt="Qwen3.5-122B tool benchmark details">
-</p>
-
-<p align="center">
-  <img src="./assets/benchmark_smarts_3.png" width="650" alt="Qwen3.5-122B tool benchmark deployability and responsiveness">
-</p>
-
-### Open WebUI Reasoning Example
-
-<p align="center">
-  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B reasoning example in Open WebUI">
-  <br><i>Open WebUI reasoning example showing a 5-minute reasoning trace before answering.</i>
-</p>
-
-### Claude Code Agent Demo
-
-<p align="center">
-  <img src="./assets/claude_code_cogni_brain_chess_app.png" width="850" alt="Claude Code using Cogni-Brain to generate a chess app">
-  <br><i>Claude Code on MacBook using Cogni-Brain as the local DGX Spark backend to generate a chess app.</i>
-</p>
-
-### DFlash Speed Experiment
+### Failed / Abandoned DFlash Speed Experiment
 
 A DFlash speculative-decode attempt pushed short-burst speed further, to about **45.2 tok/s average** and **46.2 tok/s peak**, but was not adopted because Tool-Eval dropped from **100/100** to **33/100** and tool calls repeatedly returned `500 Internal Server Error`.
 
 See [`DFLASH_EXPERIMENT.md`](./DFLASH_EXPERIMENT.md) for the full command, screenshots, and failure notes.
 
-### DFlash Entrpi Runtime Experiment
-
-A later Entrpi runtime test was much better for this use case: **47.7 tok/s average**, **50.3 tok/s peak**, **~261,497 usable context tokens**, and **100/100 Tool-Eval** with all 15 short-mode tool scenarios passing.
-
-See [`DFLASH_ENTRPI_EXPERIMENT.md`](./DFLASH_ENTRPI_EXPERIMENT.md) for the install commands, benchmark numbers, and screenshots.
 
 ## Which DGX Spark Agent Repo?
 
@@ -245,7 +168,7 @@ These are local-workstation comparison points from the adjacent repos and this r
 
 | Repo option | Model / runtime | Approx TPS | Tool-Eval | Context size | Concurrency stability | Best fit |
 |---|---|---:|---:|---:|---|---|
-| `dgx-spark-qwen-omni-super-agent` | [Intel/Qwen3.5-122B-A10B-int4-AutoRound](https://hfviewer.com/Intel/Qwen3.5-122B-A10B-int4-AutoRound) / `spark-vllm-docker` recipe | ~40 tok/s shallow; ~14.7 tok/s at 200K | 100/100 | 262K | best for one or two deep sessions; 4-way long-context runs degrade sharply | Best candidate for bigger-brain NemoHermes + Claude Code |
+| `dgx-spark-qwen-omni-super-agent` | [bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid](https://hfviewer.com/bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid) + `z-lab/Qwen3.5-122B-A10B-DFlash` / Entrpi runtime | 54.44 tok/s `tg128 c1`; 68 tok/s peak | 100/100 | 262K | primary run supports 3 concurrent streams | Best candidate for bigger-brain NemoHermes + Claude Code |
 | `dgx-spark-qwen-super-agent` | Qwen 3.6-35B-A3B NVFP4 / Atlas | ~128 tok/s local, 218.85 tok/s arena | 100/100 | 131K | very fast, but more memory-sensitive at high concurrency / long context | Fastest tool agent and quick Claude Code backend |
 | `dgx-spark-nemotron-super-agent` | Nemotron-3-Super-120B-A12B NVFP4 / vLLM | ~24 tok/s local, 23.71 tok/s arena | 93/100 | 131K | stable long runs; 4-session aggregate ~53.9 tok/s, but deep simultaneous reasoning can hit kernel issues | Original large reasoning brain for long NemoHermes jobs |
 | `dgx-spark-gemma4-omni-agent` | Gemma 4 12B / vLLM omni profile | ~25-30 tok/s local, 22.11 tok/s arena | 83/100 | 196K daily target; 262K can boot but unreliable with full stack | good for multimodal smoke tests, less ideal as main coding brain | Native image/audio/video-as-frames perception |
@@ -255,28 +178,35 @@ These are local-workstation comparison points from the adjacent repos and this r
 ```text
 .
 +-- README.md
-+-- DFLASH_EXPERIMENT.md
-+-- DFLASH_ENTRPI_EXPERIMENT.md
++-- AUTOROUND_EXPERIMENT.md    (previous baseline, preserved)
++-- DFLASH_EXPERIMENT.md       (failed attempt, preserved)
 +-- CITATION.cff
 +-- LICENSE
 +-- assets/
 +-- setup/
-|   +-- install.sh
-|   +-- download_model.sh
+|   +-- install.sh                     (clone Entrpi runtime, patch, download models)
+|   +-- download_model.sh              (download primary model and drafter)
+|   +-- autoround_install.sh           (AutoRound baseline: clone spark-vllm-docker)
+|   +-- autoround_download_model.sh    (AutoRound baseline: download model)
 +-- docker/
-|   +-- start.sh
+|   +-- start.sh                       (launch primary DFlash dense setup)
 |   +-- status.sh
 |   +-- stop.sh
+|   +-- autoround_start.sh             (AutoRound baseline launch)
+|   +-- autoround_status.sh
+|   +-- autoround_stop.sh
 +-- benchmark/
     +-- benchmark_speed.py
     +-- benchmark_smarts.py
-    +-- benchmark_speed_arena.py
+    +-- benchmark_speed_arena.py           (primary DFlash arena sweep)
+    +-- benchmark_speed_arena_autoround.py (AutoRound baseline arena sweep)
 ```
 
 ## Notes
 
-* This repo does not include `spark-vllm-docker`; it clones it beside this repo by default.
+* `setup/install.sh` clones [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark) to `~/cogni-brain`, patches the served model name and container name, and downloads the models. `docker/start.sh` delegates the actual launch to the Entrpi runtime, which applies required Python patches inside the container before starting vLLM.
+* This repo does not include `spark-vllm-docker`; the AutoRound baseline scripts clone it beside this repo by default.
 * `HF_TOKEN` should be exported before launch when model access requires authentication.
-* The recipe owns most low-level vLLM configuration. Keep overrides minimal unless you are intentionally exploring a new performance envelope.
+* The runtime owns most low-level vLLM configuration. Keep overrides minimal unless you are intentionally exploring a new performance envelope.
 * For clean arena measurements, stop other local agent containers before running the long `llama-benchy` sweep.
-* Do not treat DFlash, higher batching, higher memory utilisation, or changed speculative-token settings as stable until tool calling is re-tested.
+* Do not treat new DFlash settings, higher batching, higher memory utilisation, or changed speculative-token settings as stable until tool calling is re-tested.

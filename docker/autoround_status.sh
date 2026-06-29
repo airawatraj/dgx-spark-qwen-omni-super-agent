@@ -4,14 +4,12 @@ set -euo pipefail
 CONTAINER_NAME="${CONTAINER_NAME:-spark-brain}"
 PORT="${PORT:-8000}"
 
-echo "=== Qwen3.5-122B Entrpi DFlash dense status ==="
+echo "=== AutoRound baseline vLLM status ==="
 echo
 
 if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   STARTED_AT=$(docker inspect "$CONTAINER_NAME" --format '{{.State.StartedAt}}')
-  IMAGE=$(docker inspect "$CONTAINER_NAME" --format '{{.Config.Image}}')
   echo "  Container: running (started $STARTED_AT)"
-  echo "  Image:     $IMAGE"
 else
   echo "  Container: NOT RUNNING"
 fi

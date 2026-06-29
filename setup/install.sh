@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SPARK_VLLM_DIR="${SPARK_VLLM_DIR:-../spark-vllm-docker}"
-SPARK_VLLM_REPO="${SPARK_VLLM_REPO:-https://github.com/eugr/spark-vllm-docker.git}"
-BUILD_ON_INSTALL="${BUILD_ON_INSTALL:-auto}"
-FORCE_BUILD="${FORCE_BUILD:-0}"
-BUILD_PROFILE="${BUILD_PROFILE:---tf5}"
-FRESH_CLONE=0
+ENTRPI_DIR="${ENTRPI_DIR:-$HOME/cogni-brain}"
+ENTRPI_REPO="${ENTRPI_REPO:-https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark.git}"
+SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Cogni-Brain}"
+CONTAINER_NAME="${CONTAINER_NAME:-spark-brain}"
+ENTRPI_DEFAULT_CONTAINER="${ENTRPI_DEFAULT_CONTAINER:-qwen-spark}"
 
-echo "=== DGX Spark Qwen3.5-122B setup check ==="
-echo "  spark-vllm-docker: $SPARK_VLLM_DIR"
+echo "=== DGX Spark Cogni-Brain setup ==="
+echo "  Entrpi runtime:     $ENTRPI_DIR"
+echo "  Entrpi repo:        $ENTRPI_REPO"
+echo "  Served model name:  $SERVED_MODEL_NAME"
+echo "  Container name:     $CONTAINER_NAME"
 echo
 
 echo "[1/5] Checking Docker..."
@@ -23,64 +25,65 @@ else
   echo "WARNING: nvidia-smi is not on PATH."
 fi
 
-echo "[3/5] Checking git and uv..."
+echo "[3/5] Checking git and uvx..."
 command -v git >/dev/null 2>&1 || {
   echo "ERROR: git is not installed or not on PATH."
   exit 1
 }
-if ! command -v uv >/dev/null 2>&1; then
-  echo "ERROR: uv is not installed."
-  echo "Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh"
-  exit 1
-fi
 if ! command -v uvx >/dev/null 2>&1; then
   echo "ERROR: uvx is not installed."
   echo "Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh"
   exit 1
 fi
 git --version
-uv --version
 uvx --version
 
 echo "[4/5] Checking Hugging Face auth..."
 if [[ -z "${HF_TOKEN:-}" ]]; then
-  echo "WARNING: HF_TOKEN is not set. Export it before launch if the model requires auth."
+  echo "WARNING: HF_TOKEN is not set. Export it before launch if model access requires auth."
 fi
 uvx hf auth whoami || {
   echo "WARNING: Hugging Face CLI auth check failed."
   echo "Run: uvx hf auth login"
 }
 
-echo "[5/5] Preparing spark-vllm-docker..."
-if [[ ! -d "$SPARK_VLLM_DIR/.git" ]]; then
-  echo "Cloning $SPARK_VLLM_REPO ..."
-  git clone "$SPARK_VLLM_REPO" "$SPARK_VLLM_DIR"
-  FRESH_CLONE=1
+echo "[5/5] Preparing Entrpi DFlash runtime and downloading models..."
+if [[ ! -d "$ENTRPI_DIR/.git" ]]; then
+  echo "Cloning $ENTRPI_REPO ..."
+  git clone "$ENTRPI_REPO" "$ENTRPI_DIR"
 else
-  echo "Found existing checkout: $SPARK_VLLM_DIR"
+  echo "Found existing Entrpi checkout: $ENTRPI_DIR"
 fi
 
-if [[ "$FORCE_BUILD" == "1" ]]; then
-  SHOULD_BUILD=1
-elif [[ "$BUILD_ON_INSTALL" == "1" ]]; then
-  SHOULD_BUILD=1
-elif [[ "$BUILD_ON_INSTALL" == "auto" && "$FRESH_CLONE" == "1" ]]; then
-  SHOULD_BUILD=1
+# Patch the served model name in runtime/serve.sh if needed.
+SERVE_SCRIPT="$ENTRPI_DIR/runtime/serve.sh"
+if [[ -f "$SERVE_SCRIPT" ]]; then
+  if grep -q -- "--served-model-name qwen" "$SERVE_SCRIPT"; then
+    sed -i "s/--served-model-name qwen/--served-model-name \"$SERVED_MODEL_NAME\"/g" "$SERVE_SCRIPT"
+    echo "Patched runtime/serve.sh served model name to $SERVED_MODEL_NAME."
+  elif grep -q -- "--served-model-name \"$SERVED_MODEL_NAME\"" "$SERVE_SCRIPT" || grep -q -- "--served-model-name $SERVED_MODEL_NAME" "$SERVE_SCRIPT"; then
+    echo "runtime/serve.sh already serves $SERVED_MODEL_NAME."
+  else
+    echo "WARNING: Could not find the expected served-model-name line in runtime/serve.sh."
+    echo "Check $SERVE_SCRIPT before starting the runtime."
+  fi
 else
-  SHOULD_BUILD=0
+  echo "WARNING: $SERVE_SCRIPT not found. The Entrpi checkout layout may have changed."
 fi
 
-if [[ "$SHOULD_BUILD" == "1" ]]; then
-  echo "Building spark-vllm-docker once with profile $BUILD_PROFILE ..."
-  (
-    cd "$SPARK_VLLM_DIR"
-    ./build-and-copy.sh "$BUILD_PROFILE"
-  )
-else
-  echo "Skipping build; existing spark-vllm-docker checkout is being reused."
-  echo "Set FORCE_BUILD=1 to rebuild."
+# Patch default container name references from qwen-spark to spark-brain.
+# Exclude .bak files so repeated runs do not find stale backup copies.
+if grep -RIl --exclude="*.bak" "$ENTRPI_DEFAULT_CONTAINER" "$ENTRPI_DIR" >/dev/null 2>&1; then
+  grep -RIl --exclude="*.bak" "$ENTRPI_DEFAULT_CONTAINER" "$ENTRPI_DIR" 2>/dev/null | while IFS= read -r file; do
+    sed -i "s/$ENTRPI_DEFAULT_CONTAINER/$CONTAINER_NAME/g" "$file"
+  done
+  echo "Patched Entrpi checkout container references to $CONTAINER_NAME."
 fi
+
+# Download the primary model and drafter (idempotent — skips if cached).
+bash "$(dirname "$0")/download_model.sh"
 
 echo
-echo "Setup check complete."
-echo "Next: bash setup/download_model.sh"
+echo "Setup complete."
+echo "Status: bash docker/status.sh"
+echo "Start:  bash docker/start.sh"

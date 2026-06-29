@@ -3,12 +3,15 @@
 # requires-python = ">=3.10"
 # ///
 """
-DGX Spark / Qwen3.5-122B Arena Benchmark
-Runs the long-form llama-benchy sweep used for spark-arena-style measurements.
+DGX Spark / AutoRound Baseline Arena Benchmark
+Runs the long-form llama-benchy sweep used for spark-arena-style measurements
+against the AutoRound INT4 + MTP baseline setup.
+
+Reference result: https://spark-arena.com/benchmark/sub1781472573286
 
 Usage:
-  uv run benchmark/benchmark_speed_arena.py
-  uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_arena.csv
+  uv run benchmark/benchmark_speed_arena_autoround.py
+  uv run benchmark/benchmark_speed_arena_autoround.py --save-result benchmark/results_arena_autoround.csv
 """
 
 import argparse
@@ -77,13 +80,19 @@ def build_command(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run a spark-arena-style llama-benchy sweep against the local Qwen3.5-122B endpoint.",
-        epilog="Example: uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_arena.csv",
+        description=(
+            "Run a spark-arena-style llama-benchy sweep against the local "
+            "AutoRound baseline endpoint (Intel/Qwen3.5-122B-A10B-int4-AutoRound)."
+        ),
+        epilog=(
+            "Example: uv run benchmark/benchmark_speed_arena_autoround.py "
+            "--save-result benchmark/results_arena_autoround.csv"
+        ),
     )
     parser.add_argument("--base-url", default="http://localhost:8000/v1")
     parser.add_argument("--model", default="Cogni-Brain")
     parser.add_argument("--served-model-name", default="Cogni-Brain")
-    parser.add_argument("--tokenizer", default="bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid")
+    parser.add_argument("--tokenizer", default="Intel/Qwen3.5-122B-A10B-int4-AutoRound")
     parser.add_argument("--pp", type=int, default=2048)
     parser.add_argument("--tg", type=int, default=128)
     parser.add_argument(
@@ -98,10 +107,10 @@ def main():
         ),
     )
     parser.add_argument("--concurrency", nargs="+", type=int, default=[1, 2, 4])
-    parser.add_argument("--save-result", default="benchmark/results_arena.csv")
+    parser.add_argument("--save-result", default="benchmark/results_arena_autoround.csv")
     args = parser.parse_args()
 
-    header("ARENA BENCHMARK")
+    header("AUTOROUND BASELINE ARENA BENCHMARK")
     result_line("Timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     result_line("Base URL", args.base_url)
     result_line("Model", args.model)
@@ -113,6 +122,7 @@ def main():
     result_line("Concurrency", ", ".join(str(concurrency) for concurrency in args.concurrency))
     result_line("Output CSV", args.save_result)
     print()
+    print(f"  {c('Reference: https://spark-arena.com/benchmark/sub1781472573286', 'dim')}")
     print(f"  {c('This sweep can take several hours. Run it with other agent containers stopped.', 'yellow')}")
 
     if shutil.which("uv") is None:

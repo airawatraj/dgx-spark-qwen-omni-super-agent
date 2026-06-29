@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "DGX Spark Qwen3.5-122B-A10B Omni Super Agent with spark-vllm-docker"
+title: "DGX Spark Qwen3.5-122B-A10B DFlash Dense Omni Super Agent"
 message: "If you use this setup, benchmark wrappers, or recipe notes, please cite it as below."
 type: software
 authors:
@@ -9,18 +9,35 @@ authors:
     orcid: "https://orcid.org/0009-0007-5017-1341"
 repository-code: "https://github.com/airawatraj/dgx-spark-qwen-omni-super-agent"
 abstract: >-
-  A lightweight DGX Spark setup and benchmark wrapper suite for running
-  Intel/Qwen3.5-122B-A10B-int4-AutoRound through the community spark-vllm-docker
-  recipe stack, targeting a practical balance of local agent speed, 262K-class
-  context and tool-use reliability.
+  A lightweight DGX Spark setup and benchmark wrapper suite for running the
+  Entrpi DFlash dense Qwen3.5-122B-A10B configuration as the primary local
+  Cogni-Brain agent backend. The primary setup uses the
+  bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid model with the
+  z-lab/Qwen3.5-122B-A10B-DFlash drafter, targeting 262K-class context,
+  3 concurrent streams, improved local generation speed, and tool-use
+  reliability.
 keywords:
   - "Qwen"
   - "DGX Spark"
   - "vLLM"
-  - "spark-vllm-docker"
+  - "DFlash"
+  - "Entrpi"
   - "AI Agents"
   - "Long Context"
   - "Performance Benchmarking"
 license: MIT
 version: 1.0.0
-date-released: "2026-06-14"
+date-released: "2026-06-30"
+references:
+  - type: software
+    title: "Qwen3.5-122B-A10B on DGX Spark"
+    repository-code: "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark"
+    notes: "Entrpi setup used as the basis for the primary DFlash dense run."
+  - type: software
+    title: "bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid"
+    repository-code: "https://huggingface.co/bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid"
+    notes: "Primary INT4+FP8 hybrid model used by the DFlash dense setup."
+  - type: software
+    title: "z-lab/Qwen3.5-122B-A10B-DFlash"
+    repository-code: "https://huggingface.co/z-lab/Qwen3.5-122B-A10B-DFlash"
+    notes: "DFlash drafter used for speculative decoding in the primary setup."
