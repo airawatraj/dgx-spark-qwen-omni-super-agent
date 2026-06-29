@@ -246,11 +246,20 @@ def test_concurrent(host, port, model, max_concurrent=4):
             total_tokens = sum(tokens for tokens, _, _ in valid)
             total_tps = round(total_tokens / elapsed, 1) if elapsed > 0 else 0
             per_session = round(total_tps / concurrency, 1)
-            color = "green" if per_session >= 20 else "yellow" if per_session >= 10 else "red"
+            color = (
+                "red"
+                if errors
+                else "green"
+                if per_session >= 20
+                else "yellow"
+                if per_session >= 10
+                else "red"
+            )
             print(
                 f"  {(str(concurrency) + ' session(s)').ljust(14)} "
                 f"total={c(str(total_tps) + ' tok/s', color).ljust(22)} "
                 f"per-session={c(str(per_session) + ' tok/s', color)}"
+                f"{c(' partial failures=' + str(len(errors)), 'red') if errors else ''}"
             )
         else:
             print(f"  {(str(concurrency) + ' session(s)').ljust(14)} {c('ALL FAILED: ' + str(errors[0]), 'red')}")
@@ -265,7 +274,7 @@ def test_context_window(host, port, model):
     print(f"  {'Context tokens'.ljust(20)} {'Result'.ljust(20)} {'TPS'}")
     print(f"  {'-' * 50}")
     for size in sizes:
-        prompt = make_prompt(int(size * 0.75))
+        prompt = make_prompt(int(size / 1.33) + 2)
         actual_tokens = count_tokens_approx(prompt)
         ttft, tps, _, _, err = stream_completion(host, port, model, prompt, max_tokens=96, timeout=300)
         if err:
@@ -323,12 +332,17 @@ def print_summary(avg_tps, peak_tps, max_context, host, port, model):
     result_line("Peak TPS", peak_tps, "tok/s", "green" if peak_tps >= TARGET_TPS else "yellow")
     result_line(
         "Max usable context",
-        f"~{max_context:,}" if max_context else "not tested",
+        f"~{max_context:,}" if max_context is not None else "skipped",
         "tokens",
-        "green" if max_context >= TARGET_CONTEXT else "yellow",
+        "green" if max_context is not None and max_context >= TARGET_CONTEXT else "yellow",
     )
     print()
-    if avg_tps >= TARGET_TPS and max_context >= TARGET_CONTEXT:
+    if max_context is None:
+        if avg_tps >= TARGET_TPS:
+            print(c("  PASS speed target. Context target was skipped.", "green"))
+        else:
+            print(c("  REVIEW speed target not fully reached. Context target was skipped.", "yellow"))
+    elif avg_tps >= TARGET_TPS and max_context >= TARGET_CONTEXT:
         print(c("  PASS target profile: 40 TPS class with 262K context.", "green"))
     else:
         print(c("  REVIEW target profile not fully reached in this run.", "yellow"))
@@ -367,7 +381,7 @@ def main():
     if not args.skip_concurrent:
         test_concurrent(args.host, args.port, args.model)
 
-    max_context = 0
+    max_context = None
     if not args.skip_context:
         max_context = test_context_window(args.host, args.port, args.model)
 
