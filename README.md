@@ -161,15 +161,16 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 | Runtime path | `spark-vllm-docker` recipe |
 | Served model name | `Cogni-Brain` |
 
-### Stable Profile vs Rejected Experiments
+### Stable Profile vs Experiments
 
 | Profile | Main goal | Approx TPS | Tool-Eval | Status |
 |---|---|---:|---:|---|
 | Stable recipe profile | long-context local agent use | ~40 tok/s | 100 / 100 | default |
+| DFlash Entrpi runtime | faster local agent serving | 47.7 tok/s average; 50.3 tok/s peak | 100 / 100 | documented successful experiment |
 | DFlash speed-push profile | short-burst speed experiment | ~45.2 tok/s average; 46.2 tok/s peak | 33 / 100 | documented experiment, not default |
 | 16384/spec1/gpu0.8 profile | conservative batching/speculative test | 37.8 tok/s average; 38.2 tok/s peak | 7 / 100 | rejected |
 
-The speed experiments are useful because they show the tradeoff clearly: the faster or seemingly safer configurations can make token throughput look different, but the stable recipe profile is the one that preserves tool reliability.
+The speed experiments are useful because they show the tradeoff clearly: the first DFlash attempt was faster but broke tool reliability, while the later Entrpi runtime preserved the 100/100 tool score and improved short-output speed.
 
 ### Llama-Benchy Spark Arena
 
@@ -232,6 +233,12 @@ A DFlash speculative-decode attempt pushed short-burst speed further, to about *
 
 See [`DFLASH_EXPERIMENT.md`](./DFLASH_EXPERIMENT.md) for the full command, screenshots, and failure notes.
 
+### DFlash Entrpi Runtime Experiment
+
+A later Entrpi runtime test was much better for this use case: **47.7 tok/s average**, **50.3 tok/s peak**, **~261,497 usable context tokens**, and **100/100 Tool-Eval** with all 15 short-mode tool scenarios passing.
+
+See [`DFLASH_ENTRPI_EXPERIMENT.md`](./DFLASH_ENTRPI_EXPERIMENT.md) for the install commands, benchmark numbers, and screenshots.
+
 ## Which DGX Spark Agent Repo?
 
 These are local-workstation comparison points from the adjacent repos and this repo. Treat them as practical operating notes, not universal model claims.
@@ -249,6 +256,7 @@ These are local-workstation comparison points from the adjacent repos and this r
 .
 +-- README.md
 +-- DFLASH_EXPERIMENT.md
++-- DFLASH_ENTRPI_EXPERIMENT.md
 +-- CITATION.cff
 +-- LICENSE
 +-- assets/
