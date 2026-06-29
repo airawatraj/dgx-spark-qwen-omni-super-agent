@@ -29,7 +29,7 @@ The earlier Qwen 35B setup chased maximum single-stream speed. The Nemotron setu
 * enough speed to stay usable as a local agent
 * enough model capacity to feel less brittle on deep reasoning
 * enough context for 262K-class working memory
-* reliable dense DFlash serving through the Entrpi runtime (setup credit: [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark))
+* reliable dense DFlash serving through the Entrpi runtime
 * simple launch path using this repo's own `setup/install.sh` and `docker/start.sh`
 * OpenAI-compatible serving under the stable `Cogni-Brain` alias
 
@@ -45,8 +45,7 @@ The practical goal is to find the best DGX Spark brain for:
 | Layer | Choice |
 |---|---|
 | Hardware | NVIDIA DGX Spark |
-| Runtime | Entrpi `qwen3.5-122B-A10B-on-spark` |
-| Setup credit | [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark) |
+| Runtime | Entrpi [`qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark) |
 | Model | `bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid` |
 | Quantization | INT4+FP8 hybrid |
 | Speculative decoding | DFlash n=12 via `z-lab/Qwen3.5-122B-A10B-DFlash` |
@@ -83,7 +82,7 @@ bash docker/start.sh
 
 ## Runtime Defaults
 
-The primary launch path is `bash setup/install.sh` (first time) and `bash docker/start.sh` (subsequent starts). Setup credit: [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark).
+The primary launch path is `bash setup/install.sh` (first time) and `bash docker/start.sh` (subsequent starts).
 
 | Setting | Default |
 |---|---|
@@ -133,7 +132,6 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 | Concurrent streams | 3 |
 | Tool-eval-bench short mode | 100 / 100 |
 | Spark Arena result | [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406) |
-| Setup credit | [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark) |
 | Served model name | `Cogni-Brain` |
 
 ### Stable Profile vs Experiments
@@ -145,11 +143,49 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 | Failed DFlash speed-push profile | abandoned short-burst speed experiment | ~45.2 tok/s average; 46.2 tok/s peak | 33 / 100 | failed / abandoned |
 | 16384/spec1/gpu0.8 profile | conservative batching/speculative test | 37.8 tok/s average; 38.2 tok/s peak | 7 / 100 | rejected |
 
-The speed experiments are useful because they show the tradeoff clearly: the first `spark-vllm-docker` DFlash attempt was faster but broke tool reliability, while the Entrpi DFlash runtime preserved the 100/100 tool score and became the primary stable setup. Setup credit for the primary DFlash run goes to [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark).
+The speed experiments are useful because they show the tradeoff clearly: the first `spark-vllm-docker` DFlash attempt was faster but broke tool reliability, while the Entrpi DFlash runtime preserved the 100/100 tool score and became the primary stable setup.
 
 ### Primary Spark Arena Result
 
-Spark Arena result for the Entrpi dense DFlash primary run: [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406). Setup credit: [`Entrpi/qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark).
+Spark Arena result for the Entrpi dense DFlash primary run: [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406).
+
+<p align="center">
+  <img src="./assets/spark_arena_qwen3_5_122b-new.png" width="850" alt="Spark Arena benchmark result for bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid DFlash dense on single DGX Spark">
+</p>
+
+### Speed Test
+
+<p align="center">
+  <img src="./assets/dflash_entrpi_speed_test_1-3.png" width="850" alt="Cogni-Brain DFlash Entrpi speed test results 1–3">
+</p>
+
+<p align="center">
+  <img src="./assets/dflash_entrpi_speed_test_4-5.png" width="850" alt="Cogni-Brain DFlash Entrpi speed test results 4–5">
+</p>
+
+### Tool-Eval
+
+<p align="center">
+  <img src="./assets/dflash_entrpi_tool_smarts_1.png" width="850" alt="Tool-Eval benchmark result 1 — Cogni-Brain (DFlash Entrpi)">
+</p>
+
+<p align="center">
+  <img src="./assets/dflash_entrpi_tool_smarts_2.png" width="850" alt="Tool-Eval benchmark result 2 — Cogni-Brain (DFlash Entrpi)">
+</p>
+
+<p align="center">
+  <img src="./assets/dflash_entrpi_tool_smarts_3.png" width="850" alt="Tool-Eval benchmark result 3 — Cogni-Brain (DFlash Entrpi)">
+</p>
+
+### Agent in Use
+
+<p align="center">
+  <img src="./assets/claude_code_cogni_brain_chess_app.png" width="850" alt="Claude Code using Cogni-Brain as the local OpenAI-compatible backend">
+</p>
+
+<p align="center">
+  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B puzzle solution via Cogni-Brain">
+</p>
 
 ## Previous Run: AutoRound Baseline
 
