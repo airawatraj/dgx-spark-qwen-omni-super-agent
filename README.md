@@ -16,11 +16,6 @@ This one is tuned for a different balance: **bigger context, reliable tool use, 
 
 > Personal workstation setup. Not for enterprise use. Use at your own risk.
 
-## Primary Stable Run
-
-The reliable path is now the Entrpi dense DFlash setup from [`qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark). Entrpi's setup pairs the hybrid INT4+FP8 checkpoint with the DFlash drafter and starts the OpenAI-compatible vLLM endpoint under the `Cogni-Brain` served name.
-
-The older `spark-vllm-docker` INT4 AutoRound + MTP setup is preserved below as the AutoRound baseline run. It remains useful as a previous stable baseline, but it is no longer the primary recommendation.
 
 ## Why This Setup
 
@@ -82,8 +77,6 @@ bash docker/start.sh
 
 ## Runtime Defaults
 
-The primary launch path is `bash setup/install.sh` (first time) and `bash docker/start.sh` (subsequent starts).
-
 | Setting | Default |
 |---|---|
 | Runtime checkout | `~/cogni-brain` |
@@ -116,11 +109,7 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 
 ## Benchmark Results
 
-> Results vary with recipe version, model revision, context length, concurrency, memory pressure, and upstream benchmark versions.
-
-> Previous experiments are documented below because they explain why the Entrpi DFlash runtime became the primary setup.
-
-> A separate conservative-looking AutoRound test using `max_num_batched_tokens=16384`, `num_speculative_tokens=1`, and `gpu_memory_utilization=0.8` was also worse than the baseline recipe profile: **37.8 tok/s average**, **38.2 tok/s peak**, and **7/100 Tool-Eval** with repeated `500 Internal Server Error` failures. It remains rejected.
+> Results vary with recipe version, model revision, context length, concurrency, memory pressure, and upstream benchmark versions. Previous experiments are documented below because they explain why the Entrpi DFlash runtime became the primary setup.
 
 | Check | Result |
 |---|---:|
@@ -131,8 +120,14 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 | Usable context | 262,144 tokens |
 | Concurrent streams | 3 |
 | Tool-eval-bench short mode | 100 / 100 |
-| Spark Arena result | [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406) |
-| Served model name | `Cogni-Brain` |
+
+## Spark Arena
+
+<p align="center">
+  <img src="./assets/spark_arena_qwen3_5_122b-new.png" width="850" alt="Spark Arena community benchmark for Qwen3.5-122B on single DGX Spark">
+  <br><i><a href="https://spark-arena.com/benchmark/sub1782762533406">spark-arena community benchmark</a> for Qwen3.5-122B on single DGX Spark.</i>
+</p>
+
 
 ### Stable Profile vs Experiments
 
@@ -141,17 +136,8 @@ The arena sweep tops out at depth `262143` with `tg=128`; using depth `262144` a
 | Entrpi dense DFlash runtime | primary stable local agent use | 54.44 tok/s `tg128 c1`; 68 tok/s peak | 100 / 100 | default |
 | AutoRound baseline recipe profile | previous long-context baseline | ~40 tok/s | 100 / 100 | preserved previous run |
 | Failed DFlash speed-push profile | abandoned short-burst speed experiment | ~45.2 tok/s average; 46.2 tok/s peak | 33 / 100 | failed / abandoned |
-| 16384/spec1/gpu0.8 profile | conservative batching/speculative test | 37.8 tok/s average; 38.2 tok/s peak | 7 / 100 | rejected |
 
 The speed experiments are useful because they show the tradeoff clearly: the first `spark-vllm-docker` DFlash attempt was faster but broke tool reliability, while the Entrpi DFlash runtime preserved the 100/100 tool score and became the primary stable setup.
-
-### Primary Spark Arena Result
-
-Spark Arena result for the Entrpi dense DFlash primary run: [`sub1782762533406`](https://spark-arena.com/benchmark/sub1782762533406).
-
-<p align="center">
-  <img src="./assets/spark_arena_qwen3_5_122b-new.png" width="850" alt="Spark Arena benchmark result for bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid DFlash dense on single DGX Spark">
-</p>
 
 ### Speed Test
 

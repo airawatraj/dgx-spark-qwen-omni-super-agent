@@ -12,12 +12,20 @@ MAX_NUM_SEQS="${MAX_NUM_SEQS:-3}"
 MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.82}"
 HF_CACHE_DIR="${HF_CACHE_DIR:-$HOME/.cache/huggingface}"
+# Profile and speculative tokens — must be explicit; Entrpi upstream default
+# profile is 'dflash' (not 'dense') and nspec defaults vary by profile. 'dense'
+# uses the hybrid INT4+FP8 model with int8 lm-head and DFlash, which is the
+# configuration that produces the validated 54.44 tok/s result.
+PROFILE="${PROFILE:-dense}"
+NSPEC="${NSPEC:-12}"
 
 echo "=== Cogni-Brain DFlash dense launch ==="
 echo "  Entrpi runtime:         $ENTRPI_DIR"
 echo "  Image:                  $IMAGE"
-echo "  Model:                  $MODEL_ID"
+echo "  Profile:                $PROFILE"
+echo "  Model (hybrid):         $MODEL_ID"
 echo "  Drafter:                $DRAFTER_MODEL_ID"
+echo "  Speculative tokens:     $NSPEC"
 echo "  Container:              $CONTAINER_NAME"
 echo "  Port:                   $PORT"
 echo "  Max model length:       $MAX_MODEL_LEN"
@@ -60,7 +68,10 @@ echo "Starting Entrpi runtime..."
   MAX_NUM_SEQS="$MAX_NUM_SEQS" \
   MAX_BATCHED_TOKENS="$MAX_NUM_BATCHED_TOKENS" \
   HF_HOME="$HF_CACHE_DIR" \
-  ./install.sh --start --no-pull --no-download "${EXTRA_ARGS[@]}"
+  ./install.sh --start --no-pull --no-download \
+    --profile "$PROFILE" \
+    --nspec "$NSPEC" \
+    "${EXTRA_ARGS[@]}"
 )
 
 echo

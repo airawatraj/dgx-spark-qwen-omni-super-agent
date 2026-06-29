@@ -12,6 +12,7 @@ echo "  Entrpi runtime:     $ENTRPI_DIR"
 echo "  Entrpi repo:        $ENTRPI_REPO"
 echo "  Served model name:  $SERVED_MODEL_NAME"
 echo "  Container name:     $CONTAINER_NAME"
+echo "  Profile:            dense (hybrid INT4+FP8 + int8 lm-head + DFlash n=12)"
 echo
 
 echo "[1/5] Checking Docker..."
@@ -47,7 +48,7 @@ uvx hf auth whoami || {
   echo "Run: uvx hf auth login"
 }
 
-echo "[5/5] Preparing Entrpi DFlash runtime and downloading models..."
+echo "[5/6] Preparing Entrpi DFlash runtime and downloading models..."
 if [[ ! -d "$ENTRPI_DIR/.git" ]]; then
   echo "Cloning $ENTRPI_REPO ..."
   git clone "$ENTRPI_REPO" "$ENTRPI_DIR"
@@ -71,7 +72,23 @@ else
   echo "WARNING: $SERVE_SCRIPT not found. The Entrpi checkout layout may have changed."
 fi
 
-# Patch default container name references from qwen-spark to spark-brain.
+# Verify the Entrpi runtime will use nspec=12 by default.
+# docker/start.sh always passes --nspec 12 explicitly, so this is a belt-and-
+# suspenders check that warns if upstream changed the default in runtime/serve.sh.
+# It does NOT patch the file — the explicit --nspec flag from docker/start.sh wins.
+if [[ -f "$SERVE_SCRIPT" ]]; then
+  NSPEC_DEFAULT=$(grep 'NSPEC="' "$SERVE_SCRIPT" | grep -oE '[0-9]+' | head -1 || true)
+  if [[ -n "$NSPEC_DEFAULT" && "$NSPEC_DEFAULT" != "12" ]]; then
+    echo "WARNING: runtime/serve.sh NSPEC default is $NSPEC_DEFAULT, not 12."
+    echo "  docker/start.sh will still pass --nspec 12 explicitly."
+    echo "  If you are launching the Entrpi runtime by hand, use: --nspec 12"
+  else
+    echo "runtime/serve.sh nspec default: ${NSPEC_DEFAULT:-ok (--nspec passed explicitly by docker/start.sh)}."
+  fi
+fi
+
+# [6/6] Patch default container name references from qwen-spark to spark-brain.
+echo "[6/6] Patching Entrpi checkout container name and downloading models..."
 # Exclude .bak files so repeated runs do not find stale backup copies.
 if grep -RIl --exclude="*.bak" "$ENTRPI_DEFAULT_CONTAINER" "$ENTRPI_DIR" >/dev/null 2>&1; then
   grep -RIl --exclude="*.bak" "$ENTRPI_DEFAULT_CONTAINER" "$ENTRPI_DIR" 2>/dev/null | while IFS= read -r file; do
