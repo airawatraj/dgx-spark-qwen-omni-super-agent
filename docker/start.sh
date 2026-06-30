@@ -71,7 +71,7 @@ echo "Starting Entrpi runtime..."
   ./install.sh --start --no-pull --no-download \
     --profile "$PROFILE" \
     --nspec "$NSPEC" \
-    "${EXTRA_ARGS[@]}"
+    ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
 )
 
 echo

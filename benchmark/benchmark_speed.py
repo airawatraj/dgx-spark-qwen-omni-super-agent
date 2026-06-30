@@ -7,7 +7,7 @@
 DGX Spark / Qwen3.5-122B speed and context benchmark.
 
 Tests TPS, TTFT, concurrent sessions, endpoint health, and the 262K context
-target for the spark-vllm-docker recipe setup.
+target for the Entrpi dense DFlash runtime setup.
 """
 
 import argparse
@@ -21,7 +21,7 @@ from datetime import datetime
 import requests
 
 
-TARGET_TPS = 40
+TARGET_TPS = 50
 TARGET_CONTEXT = 262144
 
 COLORS = {
@@ -343,7 +343,7 @@ def print_summary(avg_tps, peak_tps, max_context, host, port, model):
         else:
             print(c("  REVIEW speed target not fully reached. Context target was skipped.", "yellow"))
     elif avg_tps >= TARGET_TPS and max_context >= TARGET_CONTEXT:
-        print(c("  PASS target profile: 40 TPS class with 262K context.", "green"))
+        print(c("  PASS target profile: 50 TPS class with 262K context.", "green"))
     else:
         print(c("  REVIEW target profile not fully reached in this run.", "yellow"))
     print()

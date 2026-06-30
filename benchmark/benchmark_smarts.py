@@ -58,6 +58,8 @@ def build_command(args):
         "tool-eval-bench",
         "--base-url",
         args.base_url,
+        "--model",
+        args.model,
     ]
 
     if args.mode == "short":
@@ -88,6 +90,7 @@ def main():
         ),
     )
     parser.add_argument("--base-url", default="http://localhost:8000")
+    parser.add_argument("--model", default="Cogni-Brain", help="Served model name to test against")
     parser.add_argument(
         "--mode",
         choices=["short", "perf", "trials"],

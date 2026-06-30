@@ -15,18 +15,18 @@ echo "  Container name:     $CONTAINER_NAME"
 echo "  Profile:            dense (hybrid INT4+FP8 + int8 lm-head + DFlash n=12)"
 echo
 
-echo "[1/5] Checking Docker..."
+echo "[1/6] Checking Docker..."
 docker version --format 'Docker {{.Server.Version}}' >/dev/null
 docker version --format '  Server {{.Server.Version}}'
 
-echo "[2/5] Checking GPU visibility..."
+echo "[2/6] Checking GPU visibility..."
 if command -v nvidia-smi >/dev/null 2>&1; then
   nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 else
   echo "WARNING: nvidia-smi is not on PATH."
 fi
 
-echo "[3/5] Checking git and uvx..."
+echo "[3/6] Checking git and uvx..."
 command -v git >/dev/null 2>&1 || {
   echo "ERROR: git is not installed or not on PATH."
   exit 1
@@ -39,7 +39,7 @@ fi
 git --version
 uvx --version
 
-echo "[4/5] Checking Hugging Face auth..."
+echo "[4/6] Checking Hugging Face auth..."
 if [[ -z "${HF_TOKEN:-}" ]]; then
   echo "WARNING: HF_TOKEN is not set. Export it before launch if model access requires auth."
 fi
