@@ -170,7 +170,7 @@ The speed experiments are useful because they show the tradeoff clearly: the fir
 </p>
 
 <p align="center">
-  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B puzzle solution via Cogni-Brain">
+  <img src="./assets/puzzle_solution_qwen3_5_122b.png" width="850" alt="Qwen3.5-122B puzzle solution via Cogni-Brain in 3 minutes">
 </p>
 
 ## Previous Run: AutoRound Baseline
