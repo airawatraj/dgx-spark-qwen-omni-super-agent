@@ -4,6 +4,14 @@ Stable long-context **Cogni-Brain** agent profile for running **[bleysg/Qwen3.5-
 
 The primary stable setup is the Entrpi dense DFlash runtime from [`qwen3.5-122B-A10B-on-spark`](https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark). Setup credit for the primary run goes to Entrpi. It is the run to use first: **54.44 tok/s single-stream (`tg128 c1`)**, **68 tok/s peak**, **262K context**, **3 concurrent streams**, OpenAI-compatible vLLM serving, and stable use as the `Cogni-Brain` backend for Claude Code, NemoHermes, Open WebUI, and local agent clients.
 
+![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)
+![Base Model](https://img.shields.io/badge/base%20model-Qwen3.5--122B-purple)
+![Runtime](https://img.shields.io/badge/runtime-DFlash-orange)
+![Hardware](https://img.shields.io/badge/hardware-NVIDIA%20DGX%20Spark-brightgreen?logo=nvidia&logoColor=white)
+![Context](https://img.shields.io/badge/context-262K-blue)
+![Tool Eval](https://img.shields.io/badge/tool--eval-100%2F100-success)
+![Multimodal](https://img.shields.io/badge/multimodal-text%20%7C%20image%20%7C%20video-yellow)
+
 This repo is the Qwen omni/super-agent sibling to:
 
 | Repo | Role |
