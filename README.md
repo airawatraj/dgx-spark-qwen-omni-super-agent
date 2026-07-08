@@ -6,11 +6,12 @@ The primary stable setup is the Entrpi dense DFlash runtime from [`qwen3.5-122B-
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)
 ![Base Model](https://img.shields.io/badge/base%20model-Qwen3.5--122B-purple)
-![Runtime](https://img.shields.io/badge/runtime-DFlash-orange)
+![Runtime](https://img.shields.io/badge/runtime-Entrpi%20DFlash-orange)
+![API](https://img.shields.io/badge/API-vLLM%20OpenAI--compatible-black)
+![Precision](https://img.shields.io/badge/precision-INT4%2BFP8-blue)
 ![Hardware](https://img.shields.io/badge/hardware-NVIDIA%20DGX%20Spark-brightgreen?logo=nvidia&logoColor=white)
 ![Context](https://img.shields.io/badge/context-262K-blue)
 ![Tool Eval](https://img.shields.io/badge/tool--eval-100%2F100-success)
-![Multimodal](https://img.shields.io/badge/multimodal-text%20%7C%20image%20%7C%20video-yellow)
 
 This repo is the Qwen omni/super-agent sibling to:
 
